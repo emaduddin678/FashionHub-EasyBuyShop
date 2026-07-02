@@ -1323,6 +1323,7 @@ export function CheckoutPage() {
 
     sessionStorage.setItem("lastOrder", JSON.stringify(orderData))
     sessionStorage.removeItem("appliedPromo")
+    redirectedRef.current = true // suppress the empty-cart guard before clearing the cart
     dispatch(clearCart())
     router.push("/order-confirm")
   }, [cartItems, delivery, payment, subtotal, discount, shipping, isCod, total, dispatch, router])
