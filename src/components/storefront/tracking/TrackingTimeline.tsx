@@ -42,7 +42,7 @@ function formatTimestamp(ts: string | null, expectedDate?: string): string {
 export function TrackingTimeline({ timeline }: TrackingTimelineProps) {
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-      <h2 className="font-semibold text-[#1A2B5E] mb-6">Delivery Timeline</h2>
+      <h2 className="font-semibold text-brand-charcoal mb-6">Delivery Timeline</h2>
 
       <div className="relative">
         {timeline.map((step, i) => {
@@ -100,7 +100,7 @@ export function TrackingTimeline({ timeline }: TrackingTimelineProps) {
                     <p
                       className={`font-medium text-sm ${
                         isCompleted
-                          ? "text-[#1A2B5E]"
+                          ? "text-brand-charcoal"
                           : isActive
                           ? "text-amber-700"
                           : "text-gray-400"

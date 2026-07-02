@@ -7,6 +7,9 @@ import { X, Check } from "lucide-react"
 import { AuthLayout } from "@/components/storefront/auth/AuthLayout"
 import { PasswordInput } from "@/components/storefront/auth/PasswordInput"
 import { SocialLogin } from "@/components/storefront/auth/SocialLogin"
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
+import { registerUser } from "@/lib/store/authSlice"
+import { useRedirectIfAuthenticated } from "@/lib/hooks/useRedirectIfAuthenticated"
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -68,7 +71,7 @@ function Toast({ message, type, onDismiss }: { message: string; type: "success" 
 
 // ── Success screen ─────────────────────────────────────────────────────────────
 
-function SuccessScreen({ name, onContinue }: { name: string; onContinue: () => void }) {
+function SuccessScreen({ firstName, email }: { firstName: string; email: string }) {
   return (
     <div className="text-center py-6">
       <div
@@ -81,26 +84,28 @@ function SuccessScreen({ name, onContinue }: { name: string; onContinue: () => v
         className="font-heading font-light"
         style={{ fontSize: "clamp(1.75rem, 3vw, 2rem)", color: "var(--color-brand-charcoal)", lineHeight: 1.15, marginBottom: "8px" }}
       >
-        Welcome, {name.split(" ")[0]}!
+        Almost there, {firstName}!
       </h2>
-      <p className="font-sans mb-8" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
-        Your FashionHub account has been created.
+      <p className="font-sans mb-2" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+        We&apos;ve sent an activation link to <span style={{ fontWeight: 600 }}>{email}</span>.
+      </p>
+      <p className="font-sans mb-8" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)", opacity: 0.5 }}>
+        Click the link in that email to activate your account, then sign in.
       </p>
       <div className="space-y-3">
-        <button
-          type="button"
-          onClick={onContinue}
-          className="w-full font-sans font-semibold text-sm rounded-full"
-          style={{ height: "50px", background: "var(--color-brand-rose)", color: "var(--color-brand-ivory)", border: "none", cursor: "pointer" }}
-        >
-          Start Shopping →
-        </button>
         <Link
-          href="/account"
+          href="/account/login"
+          className="block w-full font-sans font-semibold text-sm rounded-full text-center"
+          style={{ height: "50px", lineHeight: "50px", background: "var(--color-brand-rose)", color: "var(--color-brand-ivory)" }}
+        >
+          Go to Sign In →
+        </Link>
+        <Link
+          href="/"
           className="block w-full font-sans font-semibold text-sm rounded-full text-center"
           style={{ height: "50px", lineHeight: "50px", border: "1.5px solid var(--color-border)", color: "var(--color-brand-charcoal)" }}
         >
-          Go to My Account
+          Continue Browsing
         </Link>
       </div>
     </div>
@@ -149,29 +154,34 @@ function Checkbox({
 // ── Main ───────────────────────────────────────────────────────────────────────
 
 interface FormErrors {
-  fullName?:    string
-  phone?:       string
-  email?:       string
-  password?:    string
-  confirmPwd?:  string
-  terms?:       string
+  firstName?: string
+  lastName?: string
+  phone?: string
+  email?: string
+  password?: string
+  confirmPwd?: string
+  terms?: string
+  server?: string
 }
 
 export default function RegisterPage() {
-  const router = useRouter()
+  const dispatch = useAppDispatch()
+  const authStatus = useAppSelector((s) => s.auth.status)
+  const { checking } = useRedirectIfAuthenticated()
 
-  const [fullName,    setFullName]    = useState("")
-  const [phone,       setPhone]       = useState("")
-  const [email,       setEmail]       = useState("")
-  const [password,    setPassword]    = useState("")
-  const [confirmPwd,  setConfirmPwd]  = useState("")
-  const [dob,         setDob]         = useState("")
-  const [terms,       setTerms]       = useState(false)
-  const [newsletter,  setNewsletter]  = useState(true)
-  const [loading,     setLoading]     = useState(false)
-  const [errors,      setErrors]      = useState<FormErrors>({})
-  const [success,     setSuccess]     = useState(false)
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [confirmPwd, setConfirmPwd] = useState("")
+  const [terms, setTerms] = useState(false)
+  const [newsletter, setNewsletter] = useState(true)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [success, setSuccess] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
+
+  const loading = authStatus === "loading"
 
   const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
     setToast({ message, type })
@@ -179,12 +189,13 @@ export default function RegisterPage() {
 
   function validate(): boolean {
     const e: FormErrors = {}
-    if (fullName.trim().length < 2)            e.fullName   = "Please enter your full name"
-    if (!BD_PHONE_RE.test(phone.replace(/[\s-]/g, ""))) e.phone = "Enter a valid Bangladesh phone number"
-    if (email.trim() && !EMAIL_RE.test(email)) e.email      = "Enter a valid email address"
-    if (password.length < 6)                   e.password   = "Password must be at least 6 characters"
-    if (password !== confirmPwd)               e.confirmPwd = "Passwords don't match"
-    if (!terms)                                e.terms      = "You must accept the Terms & Conditions"
+    if (firstName.trim().length < 2) e.firstName = "Please enter your first name"
+    if (lastName.trim().length < 2) e.lastName = "Please enter your last name"
+    if (phone.trim() && !BD_PHONE_RE.test(phone.replace(/[\s-]/g, ""))) e.phone = "Enter a valid Bangladesh phone number"
+    if (!email.trim() || !EMAIL_RE.test(email)) e.email = "A valid email address is required"
+    if (password.length < 8) e.password = "Password must be at least 8 characters"
+    if (password !== confirmPwd) e.confirmPwd = "Passwords don't match"
+    if (!terms) e.terms = "You must accept the Terms & Conditions"
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -192,14 +203,36 @@ export default function RegisterPage() {
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault()
     if (!validate()) return
-    setLoading(true)
-    await new Promise((r) => setTimeout(r, 1000))
-    console.log("Register:", { fullName, phone, email, dob, newsletter })
-    setLoading(false)
-    setSuccess(true)
+
+    const result = await dispatch(
+      registerUser({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.toLowerCase().trim(),
+        password,
+        phoneNumber: phone.trim() || undefined,
+      }),
+    )
+
+    if (registerUser.fulfilled.match(result)) {
+      setSuccess(true)
+    } else {
+      const msg = (result.payload as string) || "Registration failed. Please try again."
+      setErrors((prev) => ({ ...prev, server: msg }))
+    }
   }
 
   const pwdMatch = confirmPwd.length > 0 && password === confirmPwd
+
+  if (checking) {
+    return (
+      <AuthLayout mode="register">
+        <div className="flex items-center justify-center py-24">
+          <p className="font-sans text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.5 }}>Loading…</p>
+        </div>
+      </AuthLayout>
+    )
+  }
 
   return (
     <>
@@ -207,7 +240,7 @@ export default function RegisterPage() {
 
       <AuthLayout mode="register">
         {success ? (
-          <SuccessScreen name={fullName || "there"} onContinue={() => router.push("/")} />
+          <SuccessScreen firstName={firstName || "there"} email={email} />
         ) : (
           <>
             <h1
@@ -221,40 +254,35 @@ export default function RegisterPage() {
             </p>
 
             <form onSubmit={handleRegister} className="space-y-4">
-              {/* Full Name */}
-              <div>
-                <FieldLabel required>Full Name</FieldLabel>
-                <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Rahim Uddin"
-                  style={{ ...inputStyle, borderColor: errors.fullName ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = errors.fullName ? "var(--color-brand-rose)" : "var(--color-brand-charcoal)" }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = errors.fullName ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                />
-                <FieldError msg={errors.fullName} />
+              {/* First / Last name */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <FieldLabel required>First Name</FieldLabel>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Rahima"
+                    style={{ ...inputStyle, borderColor: errors.firstName ? "var(--color-brand-rose)" : "var(--color-border)" }}
+                  />
+                  <FieldError msg={errors.firstName} />
+                </div>
+                <div>
+                  <FieldLabel required>Last Name</FieldLabel>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Khatun"
+                    style={{ ...inputStyle, borderColor: errors.lastName ? "var(--color-brand-rose)" : "var(--color-border)" }}
+                  />
+                  <FieldError msg={errors.lastName} />
+                </div>
               </div>
 
-              {/* Phone */}
+              {/* Email (required — used for activation) */}
               <div>
-                <FieldLabel required>Phone Number</FieldLabel>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="01XXXXXXXXX"
-                  autoComplete="tel"
-                  style={{ ...inputStyle, borderColor: errors.phone ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = errors.phone ? "var(--color-brand-rose)" : "var(--color-brand-charcoal)" }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = errors.phone ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                />
-                <FieldError msg={errors.phone} />
-              </div>
-
-              {/* Email */}
-              <div>
-                <FieldLabel optional>Email Address</FieldLabel>
+                <FieldLabel required>Email Address</FieldLabel>
                 <input
                   type="email"
                   value={email}
@@ -262,10 +290,26 @@ export default function RegisterPage() {
                   placeholder="email@example.com"
                   autoComplete="email"
                   style={{ ...inputStyle, borderColor: errors.email ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = errors.email ? "var(--color-brand-rose)" : "var(--color-brand-charcoal)" }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = errors.email ? "var(--color-brand-rose)" : "var(--color-border)" }}
                 />
-                <FieldError msg={errors.email} />
+                {errors.email ? <FieldError msg={errors.email} /> : (
+                  <p className="font-sans mt-1" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.45 }}>
+                    We&apos;ll send your activation link here.
+                  </p>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div>
+                <FieldLabel optional>Phone Number</FieldLabel>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="01XXXXXXXXX"
+                  autoComplete="tel"
+                  style={{ ...inputStyle, borderColor: errors.phone ? "var(--color-brand-rose)" : "var(--color-border)" }}
+                />
+                <FieldError msg={errors.phone} />
               </div>
 
               {/* Password */}
@@ -274,7 +318,7 @@ export default function RegisterPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min 6 characters"
+                placeholder="Min 8 characters"
                 autoComplete="new-password"
                 showStrength
                 error={errors.password}
@@ -298,17 +342,9 @@ export default function RegisterPage() {
                         ? "#5a8a6a"
                         : "var(--color-border)",
                     }}
-                    onFocus={(e) => { e.currentTarget.style.borderColor = errors.confirmPwd ? "var(--color-brand-rose)" : "var(--color-brand-charcoal)" }}
-                    onBlur={(e) => {
-                      e.currentTarget.style.borderColor = errors.confirmPwd
-                        ? "var(--color-brand-rose)"
-                        : confirmPwd && pwdMatch ? "#5a8a6a" : "var(--color-border)"
-                    }}
                   />
                   {confirmPwd && (
-                    <div
-                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)" }}
-                    >
+                    <div style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)" }}>
                       {pwdMatch
                         ? <Check size={15} style={{ color: "#5a8a6a" }} />
                         : <X size={15} style={{ color: "var(--color-brand-rose)" }} />}
@@ -321,22 +357,6 @@ export default function RegisterPage() {
                   </p>
                 )}
                 <FieldError msg={errors.confirmPwd} />
-              </div>
-
-              {/* Date of Birth */}
-              <div>
-                <FieldLabel optional>Date of Birth</FieldLabel>
-                <input
-                  type="date"
-                  value={dob}
-                  onChange={(e) => setDob(e.target.value)}
-                  style={{ ...inputStyle }}
-                  onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-brand-charcoal)" }}
-                  onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)" }}
-                />
-                <p className="font-sans mt-1" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.45 }}>
-                  Get a special birthday offer from us.
-                </p>
               </div>
 
               {/* Checkboxes */}
@@ -359,6 +379,16 @@ export default function RegisterPage() {
                 </Checkbox>
               </div>
 
+              {/* Server error */}
+              {errors.server && (
+                <div
+                  className="rounded-xl px-4 py-3 font-sans text-sm"
+                  style={{ background: "rgba(198,147,132,0.1)", border: "1px solid rgba(198,147,132,0.3)", color: "var(--color-brand-rose)" }}
+                >
+                  {errors.server}
+                </div>
+              )}
+
               {/* Submit */}
               <button
                 type="submit"
@@ -372,12 +402,6 @@ export default function RegisterPage() {
                   border: "none",
                   cursor: loading || !terms ? "not-allowed" : "pointer",
                   opacity: !terms && !loading ? 0.6 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (!loading && terms) (e.currentTarget as HTMLButtonElement).style.background = "var(--color-brand-mauve)"
-                }}
-                onMouseLeave={(e) => {
-                  if (!loading && terms) (e.currentTarget as HTMLButtonElement).style.background = "var(--color-brand-rose)"
                 }}
               >
                 {loading ? (

@@ -7,47 +7,42 @@ import {
   Package, Heart, User, MapPin, Lock, LogOut,
   X, Check, ChevronRight, Eye, EyeOff,
 } from "lucide-react"
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
+import { logoutUser } from "@/lib/store/authSlice"
+import { getMyOrders, type MyOrder } from "@/lib/api/orders"
+import userApi, { type Address, type AddressInput } from "@/lib/api/user"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type NavTab = "orders" | "wishlist" | "details" | "addresses" | "security"
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
-
-const MOCK_USER = {
-  fullName: "Rahim Uddin",
-  phone:    "01712-345678",
-  email:    "rahim@example.com",
-  dob:      "1992-05-14",
-  joinedAt: "March 2024",
-}
-
 type OrderStatus = "Processing" | "Shipped" | "Delivered" | "Cancelled"
 
-interface MockOrder {
-  id: string
-  date: string
-  items: string
-  total: number
-  status: OrderStatus
+// Backend order.status: pending | confirmed | processing | shipped | delivered | cancelled | refunded
+const BACKEND_STATUS_LABEL: Record<string, OrderStatus> = {
+  pending: "Processing",
+  confirmed: "Processing",
+  processing: "Processing",
+  shipped: "Shipped",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  refunded: "Cancelled",
 }
-
-const MOCK_ORDERS: MockOrder[] = [
-  { id: "FH-1719234567", date: "24 Jun 2026", items: "Aarong Cotton Block Print Kurta (M)",    total: 1850, status: "Delivered"  },
-  { id: "FH-1718034210", date: "18 Jun 2026", items: "Yellow Printed A-Line Kurta (S) ×2",    total: 2900, status: "Shipped"    },
-  { id: "FH-1717200000", date: "10 Jun 2026", items: "Sana Safinaz Embroidered Lawn Suit (M)", total: 5200, status: "Processing" },
-  { id: "FH-1716000100", date: "01 Jun 2026", items: "Gul Ahmed Premium Lawn (L)",             total: 3100, status: "Delivered"  },
-  { id: "FH-1714800000", date: "19 May 2026", items: "Khas Silk Anarkali Suit (M)",            total: 4800, status: "Cancelled"  },
-]
-
-const MOCK_ADDRESSES = [
-  { id: 1, label: "Home", name: "Rahim Uddin", line: "House 12, Road 4, Block B, Dhanmondi", city: "Dhaka", postal: "1205", phone: "01712-345678", isDefault: true },
-  { id: 2, label: "Office", name: "Rahim Uddin", line: "Floor 6, Gulshan Tower, Plot 20", city: "Dhaka", postal: "1212", phone: "01712-345678", isDefault: false },
-]
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function taka(n: number) { return `৳${n.toLocaleString()}` }
+
+function formatOrderDate(iso: string) {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+}
+
+function summarizeItems(items: MyOrder["items"]): string {
+  if (items.length === 0) return "—"
+  const first = items[0]
+  const suffix = items.length > 1 ? ` +${items.length - 1} more` : ""
+  return `${first.productName}${first.quantity > 1 ? ` ×${first.quantity}` : ""}${suffix}`
+}
 
 const STATUS_STYLE: Record<OrderStatus, React.CSSProperties> = {
   Processing: { background: "var(--color-brand-beige)", color: "var(--color-brand-charcoal)", border: "1px solid var(--color-border)" },
@@ -87,8 +82,20 @@ const NAV_ITEMS: { id: NavTab; label: string; icon: React.ElementType }[] = [
   { id: "security",  label: "Password & Security",  icon: Lock },
 ]
 
-function Sidebar({ active, onChange, onLogout }: { active: NavTab; onChange: (t: NavTab) => void; onLogout: () => void }) {
-  const initials = MOCK_USER.fullName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+function Sidebar({
+  active,
+  onChange,
+  onLogout,
+  fullName,
+  phone,
+}: {
+  active: NavTab
+  onChange: (t: NavTab) => void
+  onLogout: () => void
+  fullName: string
+  phone: string
+}) {
+  const initials = fullName.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "?"
 
   return (
     <div
@@ -120,11 +127,13 @@ function Sidebar({ active, onChange, onLogout }: { active: NavTab; onChange: (t:
           {initials}
         </div>
         <p className="font-sans font-semibold" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)" }}>
-          {MOCK_USER.fullName}
+          {fullName}
         </p>
-        <p className="font-sans mt-0.5" style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.5 }}>
-          {MOCK_USER.phone}
-        </p>
+        {phone && (
+          <p className="font-sans mt-0.5" style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.5 }}>
+            {phone}
+          </p>
+        )}
       </div>
 
       {/* Nav */}
@@ -225,91 +234,137 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
 // ── Orders panel ───────────────────────────────────────────────────────────────
 
 function OrdersPanel() {
+  const [orders, setOrders] = useState<MyOrder[] | null>(null)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    let cancelled = false
+    getMyOrders()
+      .then((res) => { if (!cancelled) setOrders(res.payload.orders) })
+      .catch(() => { if (!cancelled) setError("Couldn't load your orders. Please try again.") })
+    return () => { cancelled = true }
+  }, [])
+
   return (
     <SectionCard>
       <SectionHeading>My Orders</SectionHeading>
 
-      {/* Desktop table */}
-      <div className="hidden md:block">
-        <table className="w-full">
-          <thead>
-            <tr style={{ borderBottom: "1px solid var(--color-border-light)" }}>
-              {["Order ID", "Date", "Items", "Total", "Status", ""].map((h) => (
-                <th
-                  key={h}
-                  className="font-sans text-left pb-3"
-                  style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", paddingRight: "16px" }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {MOCK_ORDERS.map((order) => (
-              <tr
-                key={order.id}
-                style={{ borderBottom: "1px solid var(--color-border-light)" }}
-              >
-                <td className="py-4 pr-4">
-                  <p className="font-sans font-semibold" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>{order.id}</p>
-                </td>
-                <td className="py-4 pr-4">
-                  <p className="font-sans" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)", opacity: 0.65 }}>{order.date}</p>
-                </td>
-                <td className="py-4 pr-4" style={{ maxWidth: "200px" }}>
-                  <p className="font-sans" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)", opacity: 0.75 }}>{order.items}</p>
-                </td>
-                <td className="py-4 pr-4">
-                  <p className="font-sans font-semibold" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>{taka(order.total)}</p>
-                </td>
-                <td className="py-4 pr-4">
-                  <span
-                    className="font-sans font-semibold rounded-full px-3 py-1"
-                    style={{ ...STATUS_STYLE[order.status], fontSize: "11px", display: "inline-block" }}
-                  >
-                    {order.status}
-                  </span>
-                </td>
-                <td className="py-4">
-                  <Link
-                    href={`/track?orderId=${order.id}`}
-                    className="font-sans font-semibold text-xs flex items-center gap-1"
-                    style={{ color: "var(--color-brand-rose)", whiteSpace: "nowrap" }}
-                  >
-                    View <ChevronRight size={12} />
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {error && (
+        <p className="font-sans mb-4" style={{ fontSize: "13px", color: "var(--color-brand-rose)" }}>{error}</p>
+      )}
 
-      {/* Mobile card list */}
-      <div className="md:hidden space-y-4">
-        {MOCK_ORDERS.map((order) => (
-          <div
-            key={order.id}
-            className="rounded-xl p-4"
-            style={{ background: "var(--color-brand-beige)", border: "1px solid var(--color-border-light)" }}
+      {orders === null && !error && (
+        <div className="space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-16 rounded-xl animate-pulse" style={{ background: "var(--color-brand-beige)" }} />
+          ))}
+        </div>
+      )}
+
+      {orders !== null && orders.length === 0 && (
+        <div className="text-center py-12">
+          <Package size={40} strokeWidth={1.5} style={{ color: "var(--color-brand-rose)", opacity: 0.35, margin: "0 auto 12px" }} />
+          <p className="font-sans mb-4" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+            You haven&apos;t placed any orders yet.
+          </p>
+          <Link
+            href="/"
+            className="font-sans font-semibold text-sm rounded-full px-6 py-2.5 inline-block"
+            style={{ background: "var(--color-brand-rose)", color: "var(--color-brand-ivory)" }}
           >
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <p className="font-sans font-semibold" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>{order.id}</p>
-              <span className="font-sans font-semibold rounded-full px-2.5 py-0.5 flex-shrink-0" style={{ ...STATUS_STYLE[order.status], fontSize: "10px" }}>
-                {order.status}
-              </span>
-            </div>
-            <p className="font-sans" style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.65 }}>{order.items}</p>
-            <div className="flex items-center justify-between mt-3">
-              <p className="font-sans font-semibold" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)" }}>{taka(order.total)}</p>
-              <Link href={`/track?orderId=${order.id}`} className="font-sans font-semibold text-xs flex items-center gap-1" style={{ color: "var(--color-brand-rose)" }}>
-                View Details <ChevronRight size={12} />
-              </Link>
-            </div>
+            Start Shopping →
+          </Link>
+        </div>
+      )}
+
+      {orders !== null && orders.length > 0 && (
+        <>
+          {/* Desktop table */}
+          <div className="hidden md:block">
+            <table className="w-full">
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+                  {["Order ID", "Date", "Items", "Total", "Status", ""].map((h) => (
+                    <th
+                      key={h}
+                      className="font-sans text-left pb-3"
+                      style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.5, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.06em", paddingRight: "16px" }}
+                    >
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((order) => {
+                  const status = BACKEND_STATUS_LABEL[order.status] ?? "Processing"
+                  return (
+                    <tr key={order._id} style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+                      <td className="py-4 pr-4">
+                        <p className="font-sans font-semibold" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>{order.orderId}</p>
+                      </td>
+                      <td className="py-4 pr-4">
+                        <p className="font-sans" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)", opacity: 0.65 }}>{formatOrderDate(order.createdAt)}</p>
+                      </td>
+                      <td className="py-4 pr-4" style={{ maxWidth: "200px" }}>
+                        <p className="font-sans truncate" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)", opacity: 0.75 }}>{summarizeItems(order.items)}</p>
+                      </td>
+                      <td className="py-4 pr-4">
+                        <p className="font-sans font-semibold" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>{taka(order.pricing.total)}</p>
+                      </td>
+                      <td className="py-4 pr-4">
+                        <span
+                          className="font-sans font-semibold rounded-full px-3 py-1"
+                          style={{ ...STATUS_STYLE[status], fontSize: "11px", display: "inline-block" }}
+                        >
+                          {status}
+                        </span>
+                      </td>
+                      <td className="py-4">
+                        <Link
+                          href={`/track?orderId=${order.orderId}`}
+                          className="font-sans font-semibold text-xs flex items-center gap-1"
+                          style={{ color: "var(--color-brand-rose)", whiteSpace: "nowrap" }}
+                        >
+                          View <ChevronRight size={12} />
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+
+          {/* Mobile card list */}
+          <div className="md:hidden space-y-4">
+            {orders.map((order) => {
+              const status = BACKEND_STATUS_LABEL[order.status] ?? "Processing"
+              return (
+                <div
+                  key={order._id}
+                  className="rounded-xl p-4"
+                  style={{ background: "var(--color-brand-beige)", border: "1px solid var(--color-border-light)" }}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <p className="font-sans font-semibold" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>{order.orderId}</p>
+                    <span className="font-sans font-semibold rounded-full px-2.5 py-0.5 flex-shrink-0" style={{ ...STATUS_STYLE[status], fontSize: "10px" }}>
+                      {status}
+                    </span>
+                  </div>
+                  <p className="font-sans" style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.65 }}>{summarizeItems(order.items)}</p>
+                  <div className="flex items-center justify-between mt-3">
+                    <p className="font-sans font-semibold" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)" }}>{taka(order.pricing.total)}</p>
+                    <Link href={`/track?orderId=${order.orderId}`} className="font-sans font-semibold text-xs flex items-center gap-1" style={{ color: "var(--color-brand-rose)" }}>
+                      View Details <ChevronRight size={12} />
+                    </Link>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </SectionCard>
   )
 }
@@ -339,12 +394,26 @@ function WishlistPanel() {
 
 // ── Details panel ──────────────────────────────────────────────────────────────
 
-function DetailsPanel({ onSaved }: { onSaved: () => void }) {
-  const [fullName, setFullName] = useState(MOCK_USER.fullName)
-  const [phone,    setPhone]    = useState(MOCK_USER.phone)
-  const [email,    setEmail]    = useState(MOCK_USER.email)
-  const [dob,      setDob]      = useState(MOCK_USER.dob)
-  const [saving,   setSaving]   = useState(false)
+function DetailsPanel({
+  userId,
+  initialFirstName,
+  initialLastName,
+  initialPhone,
+  email,
+  onSaved,
+}: {
+  userId: string
+  initialFirstName: string
+  initialLastName: string
+  initialPhone: string
+  email: string
+  onSaved: (patch: { firstName: string; lastName: string; phoneNumber: string }) => void
+}) {
+  const [firstName, setFirstName] = useState(initialFirstName)
+  const [lastName,  setLastName]  = useState(initialLastName)
+  const [phone,     setPhone]     = useState(initialPhone)
+  const [saving,    setSaving]    = useState(false)
+  const [error,     setError]     = useState("")
 
   const inputSt: React.CSSProperties = {
     width: "100%", height: "44px",
@@ -359,51 +428,74 @@ function DetailsPanel({ onSaved }: { onSaved: () => void }) {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
+    setError("")
     setSaving(true)
-    await new Promise((r) => setTimeout(r, 700))
-    console.log("Profile saved:", { fullName, phone, email, dob })
-    setSaving(false)
-    onSaved()
+    try {
+      await userApi.updateProfile(userId, { firstName, lastName, phoneNumber: phone })
+      onSaved({ firstName, lastName, phoneNumber: phone })
+    } catch (err) {
+      setError((err as Error).message || "Failed to save changes.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <SectionCard>
       <SectionHeading>My Details</SectionHeading>
       <form onSubmit={handleSave} className="space-y-5 max-w-md">
-        {[
-          { label: "Full Name",    value: fullName, set: setFullName, type: "text",  placeholder: "Your full name" },
-          { label: "Phone Number", value: phone,    set: setPhone,    type: "tel",   placeholder: "01XXXXXXXXX" },
-          { label: "Email",        value: email,    set: setEmail,    type: "email", placeholder: "email@example.com" },
-        ].map(({ label, value, set, type, placeholder }) => (
-          <div key={label}>
-            <label className="block font-sans font-semibold mb-1.5 uppercase tracking-wide" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
-              {label}
-            </label>
-            <input
-              type={type}
-              value={value}
-              onChange={(e) => set(e.target.value)}
-              placeholder={placeholder}
-              style={inputSt}
-              onFocus={(el) => { el.currentTarget.style.borderColor = "var(--color-brand-charcoal)" }}
-              onBlur={(el) => { el.currentTarget.style.borderColor = "var(--color-border)" }}
-            />
-          </div>
-        ))}
+        <div className="grid grid-cols-2 gap-4">
+          {[
+            { label: "First Name", value: firstName, set: setFirstName },
+            { label: "Last Name", value: lastName, set: setLastName },
+          ].map(({ label, value, set }) => (
+            <div key={label}>
+              <label className="block font-sans font-semibold mb-1.5 uppercase tracking-wide" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+                {label}
+              </label>
+              <input
+                type="text"
+                value={value}
+                onChange={(e) => set(e.target.value)}
+                style={inputSt}
+                onFocus={(el) => { el.currentTarget.style.borderColor = "var(--color-brand-charcoal)" }}
+                onBlur={(el) => { el.currentTarget.style.borderColor = "var(--color-border)" }}
+              />
+            </div>
+          ))}
+        </div>
 
         <div>
           <label className="block font-sans font-semibold mb-1.5 uppercase tracking-wide" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
-            Date of Birth
+            Phone Number
           </label>
           <input
-            type="date"
-            value={dob}
-            onChange={(e) => setDob(e.target.value)}
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="01XXXXXXXXX"
             style={inputSt}
             onFocus={(el) => { el.currentTarget.style.borderColor = "var(--color-brand-charcoal)" }}
             onBlur={(el) => { el.currentTarget.style.borderColor = "var(--color-border)" }}
           />
         </div>
+
+        <div>
+          <label className="block font-sans font-semibold mb-1.5 uppercase tracking-wide" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+            Email
+          </label>
+          <input
+            type="email"
+            value={email}
+            disabled
+            style={{ ...inputSt, opacity: 0.6, cursor: "not-allowed" }}
+          />
+          <p className="font-sans mt-1" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.45 }}>
+            Email can&apos;t be changed here.
+          </p>
+        </div>
+
+        {error && <p className="font-sans text-sm" style={{ color: "var(--color-brand-rose)" }}>{error}</p>}
 
         <button
           type="submit"
@@ -436,70 +528,269 @@ function DetailsPanel({ onSaved }: { onSaved: () => void }) {
 
 // ── Addresses panel ────────────────────────────────────────────────────────────
 
-function AddressesPanel() {
+const emptyAddressForm: AddressInput = {
+  label: "Home",
+  recipientName: "",
+  phoneNumber: "",
+  addressLine1: "",
+  addressLine2: "",
+  city: "",
+  district: "",
+  division: "",
+  postalCode: "",
+}
+
+function AddressForm({
+  initial,
+  onCancel,
+  onSaved,
+}: {
+  initial: AddressInput
+  onCancel: () => void
+  onSaved: (payload: AddressInput) => Promise<void>
+}) {
+  const [form, setForm] = useState<AddressInput>(initial)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  const inputSt: React.CSSProperties = {
+    width: "100%", height: "40px",
+    border: "1px solid var(--color-border)", borderRadius: "8px",
+    padding: "0 12px", fontSize: "13px",
+    fontFamily: "var(--font-sans, sans-serif)",
+    background: "var(--color-brand-ivory)", color: "var(--color-brand-charcoal)",
+    outline: "none",
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.addressLine1.trim() || !form.city.trim()) {
+      setError("Address line and city are required.")
+      return
+    }
+    setError("")
+    setSaving(true)
+    try {
+      await onSaved(form)
+    } catch (err) {
+      setError((err as Error).message || "Failed to save address.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="rounded-xl p-5 space-y-3" style={{ background: "var(--color-brand-beige)", border: "1.5px dashed var(--color-border)" }}>
+      <div className="grid grid-cols-2 gap-3">
+        <input placeholder="Label (e.g. Home)" value={form.label ?? ""} onChange={(e) => setForm({ ...form, label: e.target.value })} style={inputSt} />
+        <input placeholder="Recipient Name" value={form.recipientName ?? ""} onChange={(e) => setForm({ ...form, recipientName: e.target.value })} style={inputSt} />
+      </div>
+      <input placeholder="Address Line 1 *" value={form.addressLine1} onChange={(e) => setForm({ ...form, addressLine1: e.target.value })} style={inputSt} />
+      <input placeholder="Address Line 2 (optional)" value={form.addressLine2 ?? ""} onChange={(e) => setForm({ ...form, addressLine2: e.target.value })} style={inputSt} />
+      <div className="grid grid-cols-2 gap-3">
+        <input placeholder="City *" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} style={inputSt} />
+        <input placeholder="District" value={form.district ?? ""} onChange={(e) => setForm({ ...form, district: e.target.value })} style={inputSt} />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <input placeholder="Division" value={form.division ?? ""} onChange={(e) => setForm({ ...form, division: e.target.value })} style={inputSt} />
+        <input placeholder="Postal Code" value={form.postalCode ?? ""} onChange={(e) => setForm({ ...form, postalCode: e.target.value })} style={inputSt} />
+      </div>
+      <input placeholder="Phone Number" value={form.phoneNumber ?? ""} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} style={inputSt} />
+
+      {error && <p className="font-sans text-sm" style={{ color: "var(--color-brand-rose)" }}>{error}</p>}
+
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving}
+          className="font-sans font-semibold text-sm rounded-full px-6"
+          style={{ height: "38px", background: "var(--color-brand-rose)", color: "var(--color-brand-ivory)", border: "none", cursor: saving ? "not-allowed" : "pointer" }}
+        >
+          {saving ? "Saving…" : "Save Address"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="font-sans text-sm"
+          style={{ height: "38px", background: "none", border: "none", color: "var(--color-brand-charcoal)", opacity: 0.6, cursor: "pointer" }}
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function AddressesPanel({ userId }: { userId: string }) {
+  const [addresses, setAddresses] = useState<Address[] | null>(null)
+  const [defaultId, setDefaultId] = useState<string | null>(null)
+  const [error, setError] = useState("")
+  const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+  const load = useCallback(() => {
+    userApi.getAddresses(userId)
+      .then((res) => { setAddresses(res.addresses); setDefaultId(res.defaultAddressId) })
+      .catch(() => setError("Couldn't load your addresses."))
+  }, [userId])
+
+  useEffect(() => { load() }, [load])
+
+  async function handleAdd(payload: AddressInput) {
+    await userApi.addAddress(userId, payload)
+    setAdding(false)
+    load()
+  }
+
+  async function handleEdit(addressId: string, payload: AddressInput) {
+    await userApi.updateAddress(userId, addressId, payload)
+    setEditingId(null)
+    load()
+  }
+
+  async function handleDelete(addressId: string) {
+    await userApi.deleteAddress(userId, addressId).catch(() => {})
+    load()
+  }
+
+  async function handleSetDefault(addressId: string) {
+    await userApi.setDefaultAddress(userId, addressId).catch(() => {})
+    load()
+  }
+
   return (
     <SectionCard>
       <SectionHeading>Addresses</SectionHeading>
-      <div className="space-y-4">
-        {MOCK_ADDRESSES.map((addr) => (
-          <div
-            key={addr.id}
-            className="rounded-xl p-5"
-            style={{
-              background: "var(--color-brand-beige)",
-              border: addr.isDefault ? "1.5px solid var(--color-brand-rose)" : "1px solid var(--color-border-light)",
-            }}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-sans font-bold text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--color-brand-ivory)", color: "var(--color-brand-charcoal)", border: "1px solid var(--color-border)" }}>
-                    {addr.label}
-                  </span>
-                  {addr.isDefault && (
-                    <span className="font-sans font-bold text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(198,147,132,0.15)", color: "var(--color-brand-rose)" }}>
-                      Default
-                    </span>
-                  )}
-                </div>
-                <p className="font-sans font-semibold text-sm" style={{ color: "var(--color-brand-charcoal)" }}>{addr.name}</p>
-                <p className="font-sans text-sm mt-0.5" style={{ color: "var(--color-brand-charcoal)", opacity: 0.65 }}>{addr.line}</p>
-                <p className="font-sans text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.65 }}>{addr.city} {addr.postal}</p>
-                <p className="font-sans text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.5 }}>{addr.phone}</p>
-              </div>
-              <button
-                type="button"
-                className="font-sans text-xs underline underline-offset-2 flex-shrink-0"
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-brand-rose)", fontWeight: 600 }}
-              >
-                Edit
-              </button>
-            </div>
-          </div>
-        ))}
 
-        <button
-          type="button"
-          className="w-full font-sans font-semibold text-sm rounded-full"
-          style={{
-            height: "44px",
-            background: "transparent",
-            border: "1.5px dashed var(--color-border)",
-            color: "var(--color-brand-charcoal)",
-            opacity: 0.6,
-            cursor: "pointer",
-          }}
-        >
-          + Add New Address
-        </button>
-      </div>
+      {error && <p className="font-sans mb-4" style={{ fontSize: "13px", color: "var(--color-brand-rose)" }}>{error}</p>}
+
+      {addresses === null && !error && (
+        <div className="space-y-3">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-24 rounded-xl animate-pulse" style={{ background: "var(--color-brand-beige)" }} />
+          ))}
+        </div>
+      )}
+
+      {addresses !== null && (
+        <div className="space-y-4">
+          {addresses.length === 0 && !adding && (
+            <p className="font-sans" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+              No saved addresses yet.
+            </p>
+          )}
+
+          {addresses.map((addr) => {
+            const isDefault = addr._id === defaultId || addr.isDefault
+            if (editingId === addr._id) {
+              return (
+                <AddressForm
+                  key={addr._id}
+                  initial={addr}
+                  onCancel={() => setEditingId(null)}
+                  onSaved={(payload) => handleEdit(addr._id, payload)}
+                />
+              )
+            }
+            return (
+              <div
+                key={addr._id}
+                className="rounded-xl p-5"
+                style={{
+                  background: "var(--color-brand-beige)",
+                  border: isDefault ? "1.5px solid var(--color-brand-rose)" : "1px solid var(--color-border-light)",
+                }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-sans font-bold text-xs px-2 py-0.5 rounded-full" style={{ background: "var(--color-brand-ivory)", color: "var(--color-brand-charcoal)", border: "1px solid var(--color-border)" }}>
+                        {addr.label || "Address"}
+                      </span>
+                      {isDefault && (
+                        <span className="font-sans font-bold text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(198,147,132,0.15)", color: "var(--color-brand-rose)" }}>
+                          Default
+                        </span>
+                      )}
+                    </div>
+                    {addr.recipientName && (
+                      <p className="font-sans font-semibold text-sm" style={{ color: "var(--color-brand-charcoal)" }}>{addr.recipientName}</p>
+                    )}
+                    <p className="font-sans text-sm mt-0.5" style={{ color: "var(--color-brand-charcoal)", opacity: 0.65 }}>
+                      {[addr.addressLine1, addr.addressLine2].filter(Boolean).join(", ")}
+                    </p>
+                    <p className="font-sans text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.65 }}>
+                      {[addr.city, addr.district, addr.division].filter(Boolean).join(", ")} {addr.postalCode}
+                    </p>
+                    {addr.phoneNumber && (
+                      <p className="font-sans text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.5 }}>{addr.phoneNumber}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setEditingId(addr._id)}
+                      className="font-sans text-xs underline underline-offset-2"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-brand-rose)", fontWeight: 600 }}
+                    >
+                      Edit
+                    </button>
+                    {!isDefault && (
+                      <button
+                        type="button"
+                        onClick={() => handleSetDefault(addr._id)}
+                        className="font-sans text-xs underline underline-offset-2"
+                        style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-brand-charcoal)", opacity: 0.55 }}
+                      >
+                        Set Default
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(addr._id)}
+                      className="font-sans text-xs underline underline-offset-2"
+                      style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-brand-charcoal)", opacity: 0.4 }}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+
+          {adding ? (
+            <AddressForm
+              initial={emptyAddressForm}
+              onCancel={() => setAdding(false)}
+              onSaved={handleAdd}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setAdding(true)}
+              className="w-full font-sans font-semibold text-sm rounded-full"
+              style={{
+                height: "44px",
+                background: "transparent",
+                border: "1.5px dashed var(--color-border)",
+                color: "var(--color-brand-charcoal)",
+                opacity: 0.6,
+                cursor: "pointer",
+              }}
+            >
+              + Add New Address
+            </button>
+          )}
+        </div>
+      )}
     </SectionCard>
   )
 }
 
 // ── Security panel ─────────────────────────────────────────────────────────────
 
-function SecurityPanel({ onSaved }: { onSaved: () => void }) {
+function SecurityPanel({ userId, onSaved }: { userId: string; onSaved: () => void }) {
   const [current,  setCurrent]  = useState("")
   const [newPwd,   setNewPwd]   = useState("")
   const [confPwd,  setConfPwd]  = useState("")
@@ -512,14 +803,21 @@ function SecurityPanel({ onSaved }: { onSaved: () => void }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!current || !newPwd || !match) { setError("Please fill all fields correctly."); return }
+    if (!current || newPwd.length < 8 || !match) {
+      setError(newPwd.length > 0 && newPwd.length < 8 ? "New password must be at least 8 characters." : "Please fill all fields correctly.")
+      return
+    }
     setError("")
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 700))
-    console.log("Password change requested")
-    setLoading(false)
-    setCurrent(""); setNewPwd(""); setConfPwd("")
-    onSaved()
+    try {
+      await userApi.updatePassword(userId, { oldPassword: current, newPassword: newPwd, confirmedPassword: confPwd })
+      setCurrent(""); setNewPwd(""); setConfPwd("")
+      onSaved()
+    } catch (err) {
+      setError((err as Error).message || "Failed to update password.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const inputSt: React.CSSProperties = {
@@ -646,14 +944,39 @@ function MobileNav({ active, onChange }: { active: NavTab; onChange: (t: NavTab)
 
 export default function AccountDashboardPage() {
   const router = useRouter()
+  const dispatch = useAppDispatch()
+  const { user, sessionChecked } = useAppSelector((s) => s.auth)
   const [activeTab, setActiveTab] = useState<NavTab>("orders")
   const [toast, setToast] = useState("")
+  // Local override so Details-panel edits reflect immediately without waiting
+  // on a full session re-check.
+  const [profileOverride, setProfileOverride] = useState<{ firstName: string; lastName: string; phoneNumber: string } | null>(null)
 
   const showToast = useCallback((msg: string) => setToast(msg), [])
 
-  function handleLogout() {
-    router.push("/account/login")
+  useEffect(() => {
+    if (sessionChecked && !user) {
+      router.replace("/account/login?returnUrl=/account")
+    }
+  }, [sessionChecked, user, router])
+
+  async function handleLogout() {
+    await dispatch(logoutUser())
+    router.push("/")
   }
+
+  if (!sessionChecked || !user) {
+    return (
+      <div style={{ background: "var(--color-brand-ivory)", minHeight: "80vh" }} className="flex items-center justify-center">
+        <p className="font-sans" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)", opacity: 0.5 }}>Loading…</p>
+      </div>
+    )
+  }
+
+  const firstName = profileOverride?.firstName ?? user.firstName
+  const lastName = profileOverride?.lastName ?? user.lastName
+  const phoneNumber = profileOverride?.phoneNumber ?? user.phoneNumber ?? ""
+  const fullName = `${firstName} ${lastName}`.trim()
 
   return (
     <>
@@ -683,16 +1006,28 @@ export default function AccountDashboardPage() {
           <div className="flex gap-8 items-start">
             {/* Sidebar — desktop only */}
             <div className="hidden lg:block">
-              <Sidebar active={activeTab} onChange={setActiveTab} onLogout={handleLogout} />
+              <Sidebar active={activeTab} onChange={setActiveTab} onLogout={handleLogout} fullName={fullName} phone={phoneNumber} />
             </div>
 
             {/* Content */}
             <div className="flex-1 min-w-0">
               {activeTab === "orders"    && <OrdersPanel />}
               {activeTab === "wishlist"  && <WishlistPanel />}
-              {activeTab === "details"   && <DetailsPanel onSaved={() => showToast("Profile saved successfully.")} />}
-              {activeTab === "addresses" && <AddressesPanel />}
-              {activeTab === "security"  && <SecurityPanel onSaved={() => showToast("Password updated successfully.")} />}
+              {activeTab === "details"   && (
+                <DetailsPanel
+                  userId={user._id}
+                  initialFirstName={firstName}
+                  initialLastName={lastName}
+                  initialPhone={phoneNumber}
+                  email={user.email}
+                  onSaved={(patch) => {
+                    setProfileOverride(patch)
+                    showToast("Profile saved successfully.")
+                  }}
+                />
+              )}
+              {activeTab === "addresses" && <AddressesPanel userId={user._id} />}
+              {activeTab === "security"  && <SecurityPanel userId={user._id} onSaved={() => showToast("Password updated successfully.")} />}
             </div>
           </div>
         </div>

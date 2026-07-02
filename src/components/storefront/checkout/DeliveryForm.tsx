@@ -46,7 +46,7 @@ export function DeliveryForm({ data, onChange, errors, subtotal, submitAttempted
   function inputClass(key: keyof DeliveryData) {
     const hasErr = errors[key] && isTouched(key)
     return `w-full h-11 border rounded-lg px-3 text-sm outline-none transition-colors ${
-      hasErr ? "border-red-500 focus:border-red-500" : "border-gray-200 focus:border-[#1A2B5E]"
+      hasErr ? "border-red-500 focus:border-red-500" : "border-gray-200 focus:border-brand-charcoal"
     }`
   }
 
@@ -54,10 +54,10 @@ export function DeliveryForm({ data, onChange, errors, subtotal, submitAttempted
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-7 h-7 rounded-full bg-[#1A2B5E] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">
+        <div className="w-7 h-7 rounded-full bg-brand-charcoal text-white text-sm font-bold flex items-center justify-center flex-shrink-0">
           2
         </div>
-        <h2 className="font-semibold text-lg text-[#1A2B5E]">Delivery Address</h2>
+        <h2 className="font-semibold text-lg text-brand-charcoal">Delivery Address</h2>
       </div>
 
       {/* Delivery type toggle */}
@@ -67,7 +67,7 @@ export function DeliveryForm({ data, onChange, errors, subtotal, submitAttempted
           onClick={() => set("type", "home")}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
             !isPickup
-              ? "bg-[#1A2B5E] text-white border-[#1A2B5E]"
+              ? "bg-brand-charcoal text-white border-brand-charcoal"
               : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
           }`}
         >
@@ -78,7 +78,7 @@ export function DeliveryForm({ data, onChange, errors, subtotal, submitAttempted
           onClick={() => set("type", "pickup")}
           className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-semibold transition-colors ${
             isPickup
-              ? "bg-[#1A2B5E] text-white border-[#1A2B5E]"
+              ? "bg-brand-charcoal text-white border-brand-charcoal"
               : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
           }`}
         >
@@ -157,7 +157,7 @@ export function DeliveryForm({ data, onChange, errors, subtotal, submitAttempted
                   value={data.postalCode}
                   onChange={(e) => set("postalCode", e.target.value)}
                   placeholder="1205"
-                  className="w-full h-11 border border-gray-200 rounded-lg px-3 text-sm outline-none focus:border-[#1A2B5E] transition-colors"
+                  className="w-full h-11 border border-gray-200 rounded-lg px-3 text-sm outline-none focus:border-brand-charcoal transition-colors"
                 />
               </div>
             </div>
@@ -171,7 +171,7 @@ export function DeliveryForm({ data, onChange, errors, subtotal, submitAttempted
                 onChange={(e) => set("instructions", e.target.value)}
                 rows={3}
                 placeholder="e.g. Call before delivery, leave at gate..."
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-[#1A2B5E] transition-colors resize-none"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-brand-charcoal transition-colors resize-none"
               />
             </div>
           </div>
@@ -186,27 +186,27 @@ export function DeliveryForm({ data, onChange, errors, subtotal, submitAttempted
               onClick={() => set("speed", "standard")}
               className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-colors text-left ${
                 data.speed === "standard"
-                  ? "border-[#1A2B5E] bg-[#F0F4FF]"
+                  ? "border-brand-charcoal bg-[#F0F4FF]"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
               <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                data.speed === "standard" ? "border-[#1A2B5E]" : "border-gray-300"
+                data.speed === "standard" ? "border-brand-charcoal" : "border-gray-300"
               }`}>
                 {data.speed === "standard" && (
-                  <div className="w-2 h-2 rounded-full bg-[#1A2B5E]" />
+                  <div className="w-2 h-2 rounded-full bg-brand-charcoal" />
                 )}
               </div>
               <span className="text-2xl">🚚</span>
               <div className="flex-1">
-                <p className="font-medium text-[#1A2B5E] text-sm">Standard Delivery</p>
+                <p className="font-medium text-brand-charcoal text-sm">Standard Delivery</p>
                 <p className="text-xs text-gray-500">3-5 business days</p>
               </div>
               <div className="text-right">
                 {standardFree ? (
                   <span className="font-bold text-green-600 text-sm">FREE</span>
                 ) : (
-                  <span className="font-bold text-[#1A2B5E] text-sm">৳120</span>
+                  <span className="font-bold text-brand-charcoal text-sm">৳120</span>
                 )}
               </div>
             </button>
@@ -217,27 +217,27 @@ export function DeliveryForm({ data, onChange, errors, subtotal, submitAttempted
               onClick={() => set("speed", "express")}
               className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 transition-colors text-left ${
                 data.speed === "express"
-                  ? "border-[#1A2B5E] bg-[#F0F4FF]"
+                  ? "border-brand-charcoal bg-[#F0F4FF]"
                   : "border-gray-200 bg-white hover:border-gray-300"
               }`}
             >
               <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                data.speed === "express" ? "border-[#1A2B5E]" : "border-gray-300"
+                data.speed === "express" ? "border-brand-charcoal" : "border-gray-300"
               }`}>
                 {data.speed === "express" && (
-                  <div className="w-2 h-2 rounded-full bg-[#1A2B5E]" />
+                  <div className="w-2 h-2 rounded-full bg-brand-charcoal" />
                 )}
               </div>
               <span className="text-2xl">⚡</span>
               <div className="flex-1">
-                <p className="font-medium text-[#1A2B5E] text-sm">Express Delivery</p>
+                <p className="font-medium text-brand-charcoal text-sm">Express Delivery</p>
                 <p className="text-xs text-gray-500">Next business day</p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-[#D4A017] bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                <span className="text-xs font-bold text-brand-gold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
                   Fast
                 </span>
-                <span className="font-bold text-[#1A2B5E] text-sm">৳250</span>
+                <span className="font-bold text-brand-charcoal text-sm">৳250</span>
               </div>
             </button>
           </div>

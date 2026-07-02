@@ -53,7 +53,7 @@ export function PaymentMethod({ data, onChange, errors, submitAttempted }: Props
   function inputClass(key: string) {
     const hasErr = errors[key] && isTouched(key)
     return `w-full h-11 border rounded-lg px-3 text-sm outline-none transition-colors ${
-      hasErr ? "border-red-500 focus:border-red-500" : "border-gray-200 focus:border-[#1A2B5E]"
+      hasErr ? "border-red-500 focus:border-red-500" : "border-gray-200 focus:border-brand-charcoal"
     }`
   }
 
@@ -76,10 +76,10 @@ export function PaymentMethod({ data, onChange, errors, submitAttempted }: Props
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6 mb-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
-        <div className="w-7 h-7 rounded-full bg-[#1A2B5E] text-white text-sm font-bold flex items-center justify-center flex-shrink-0">
+        <div className="w-7 h-7 rounded-full bg-brand-charcoal text-white text-sm font-bold flex items-center justify-center flex-shrink-0">
           3
         </div>
-        <h2 className="font-semibold text-lg text-[#1A2B5E]">Payment Method</h2>
+        <h2 className="font-semibold text-lg text-brand-charcoal">Payment Method</h2>
       </div>
 
       {errors.method && (
@@ -98,7 +98,7 @@ export function PaymentMethod({ data, onChange, errors, submitAttempted }: Props
                 onClick={() => selectMethod(opt.id)}
                 className={`w-full flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-colors text-left ${
                   selected
-                    ? "border-[#1A2B5E] bg-blue-50"
+                    ? "border-brand-charcoal bg-blue-50"
                     : "border-gray-200 bg-white hover:border-gray-400"
                 }`}
               >
@@ -124,7 +124,7 @@ export function PaymentMethod({ data, onChange, errors, submitAttempted }: Props
                   <div className="flex items-center gap-2 flex-wrap">
                     <p className="font-medium text-gray-900 text-sm">{opt.label}</p>
                     {opt.badge && (
-                      <span className="text-xs font-bold text-[#D4A017] bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                      <span className="text-xs font-bold text-brand-gold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
                         {opt.badge}
                       </span>
                     )}
@@ -140,9 +140,9 @@ export function PaymentMethod({ data, onChange, errors, submitAttempted }: Props
 
                 {/* Radio */}
                 <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                  selected ? "border-[#1A2B5E]" : "border-gray-300"
+                  selected ? "border-brand-charcoal" : "border-gray-300"
                 }`}>
-                  {selected && <div className="w-2 h-2 rounded-full bg-[#1A2B5E]" />}
+                  {selected && <div className="w-2 h-2 rounded-full bg-brand-charcoal" />}
                 </div>
               </button>
 

@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { AnnouncementBar } from "@/components/storefront/AnnouncementBar"
@@ -7,8 +8,9 @@ import { Header } from "@/components/storefront/Header"
 import { Footer } from "@/components/storefront/Footer"
 import { WhatsAppFloat } from "@/components/storefront/WhatsAppFloat"
 import { ProductCard } from "@/components/storefront/ProductCard"
-import { BRANDS, PRODUCTS } from "@/lib/data/products"
-import type { BrandInfo } from "@/lib/data/products"
+import { fetchBrandBySlug, type BackendBrand } from "@/lib/api/brands"
+import { fetchProductsByBrandName, normalizeProduct } from "@/lib/api/products"
+import type { Product } from "@/lib/data/products"
 
 const BRAND_STORIES: Record<string, { tagline: string; paras: string[] }> = {
   Aarong: {
@@ -82,7 +84,34 @@ interface Props {
 }
 
 export default function BrandDetailPage({ slug }: Props) {
-  const brand = BRANDS.find((b) => b.id === slug)
+  const [brand, setBrand] = useState<BackendBrand | null | undefined>(undefined)
+  const [products, setProducts] = useState<Product[]>([])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchBrandBySlug(slug).then(async (b) => {
+      if (cancelled) return
+      setBrand(b)
+      if (b) {
+        const raw = await fetchProductsByBrandName(b.name).catch(() => [])
+        if (!cancelled) setProducts(raw.map((p, i) => normalizeProduct(p, i)))
+      }
+    })
+    return () => { cancelled = true }
+  }, [slug])
+
+  if (brand === undefined) {
+    return (
+      <div className="min-h-screen font-sans" style={{ background: "var(--color-brand-ivory)" }}>
+        <AnnouncementBar />
+        <Header />
+        <div className="max-w-3xl mx-auto px-5 py-24 text-center">
+          <p className="text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.5 }}>Loading…</p>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
 
   if (!brand) {
     return (
@@ -106,8 +135,6 @@ export default function BrandDetailPage({ slug }: Props) {
   }
 
   const story = BRAND_STORIES[brand.name]
-  const products = PRODUCTS.filter((p) => p.brand === brand.name)
-  const isBD = brand.origin === "BD"
 
   return (
     <div className="min-h-screen font-sans" style={{ background: "var(--color-brand-ivory)" }}>
@@ -118,9 +145,7 @@ export default function BrandDetailPage({ slug }: Props) {
       <div
         className="relative py-20 px-5 text-center overflow-hidden"
         style={{
-          background: isBD
-            ? "linear-gradient(135deg, var(--color-brand-beige) 0%, var(--color-brand-rose) 100%)"
-            : "linear-gradient(135deg, var(--color-brand-charcoal) 0%, #3a2a30 100%)",
+          background: "linear-gradient(135deg, var(--color-brand-beige) 0%, var(--color-brand-rose) 100%)",
         }}
       >
         <div
@@ -135,7 +160,7 @@ export default function BrandDetailPage({ slug }: Props) {
           <Link
             href="/brands"
             className="inline-flex items-center gap-1.5 mb-6 text-sm transition-opacity hover:opacity-70"
-            style={{ color: isBD ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.6)" }}
+            style={{ color: "rgba(255,255,255,0.7)" }}
           >
             <ArrowLeft size={14} /> All brands
           </Link>
@@ -143,7 +168,7 @@ export default function BrandDetailPage({ slug }: Props) {
           <div
             className="inline-flex items-center justify-center rounded-xl mb-5 mx-auto"
             style={{
-              background: isBD ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
+              background: "rgba(255,255,255,0.2)",
               border: "1px solid rgba(255,255,255,0.2)",
               padding: "14px 32px",
             }}
@@ -164,19 +189,10 @@ export default function BrandDetailPage({ slug }: Props) {
 
           <div className="flex items-center justify-center gap-4 mt-5">
             <span
-              className="text-xs font-semibold px-3 py-1.5 rounded-full"
-              style={{
-                background: "rgba(255,255,255,0.15)",
-                color: "#fff",
-              }}
-            >
-              {isBD ? "BD Label" : "Pakistani Lawn"}
-            </span>
-            <span
               className="text-xs px-3 py-1.5 rounded-full"
               style={{ background: "rgba(255,255,255,0.10)", color: "rgba(255,255,255,0.75)" }}
             >
-              {brand.productCount} styles
+              {products.length} {products.length === 1 ? "style" : "styles"}
             </span>
           </div>
         </div>

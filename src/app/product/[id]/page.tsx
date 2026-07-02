@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { PRODUCTS, CATEGORIES } from "@/lib/data/products"
+import { PRODUCTS, CATEGORIES, type Product } from "@/lib/data/products"
+import { fetchProductById, fetchRelatedProducts, fetchNewArrivals, normalizeProduct } from "@/lib/api/products"
 import { AnnouncementBar } from "@/components/storefront/AnnouncementBar"
 import { Header } from "@/components/storefront/Header"
 import { Footer } from "@/components/storefront/Footer"
@@ -11,8 +12,41 @@ import { PDPTabs } from "@/components/storefront/pdp/PDPTabs"
 import { RelatedProducts } from "@/components/storefront/pdp/RelatedProducts"
 import { RecentlyViewedPDP } from "@/components/storefront/pdp/RecentlyViewedPDP"
 
-export function generateStaticParams() {
-  return PRODUCTS.map((p) => ({ id: String(p.id) }))
+const isBackendId = (id: string) => /^[0-9a-fA-F]{24}$/.test(id)
+
+export async function generateStaticParams() {
+  const mockParams = PRODUCTS.map((p) => ({ id: String(p.id) }))
+  try {
+    const apiProducts = await fetchNewArrivals(100)
+    return [...mockParams, ...apiProducts.map((p) => ({ id: p._id }))]
+  } catch {
+    return mockParams
+  }
+}
+
+async function loadProduct(id: string): Promise<{ product: Product | null; relatedProducts: Product[] }> {
+  if (isBackendId(id)) {
+    const backendProduct = await fetchProductById(id)
+    if (!backendProduct) return { product: null, relatedProducts: [] }
+
+    const product = normalizeProduct(backendProduct)
+    let relatedProducts: Product[] = []
+    if (backendProduct.mainCategory?._id) {
+      const relatedRaw = await fetchRelatedProducts(backendProduct.mainCategory._id, backendProduct._id, 4)
+      relatedProducts = relatedRaw.map((p, i) => normalizeProduct(p, i))
+    }
+    if (relatedProducts.length === 0) {
+      relatedProducts = PRODUCTS.filter((p) => p.category === product.category).slice(0, 4)
+    }
+    return { product, relatedProducts }
+  }
+
+  const product = PRODUCTS.find((p) => p.id === Number(id)) ?? null
+  if (!product) return { product: null, relatedProducts: [] }
+  const relatedProducts = PRODUCTS.filter(
+    (p) => p.id !== product.id && p.category === product.category,
+  ).slice(0, 4)
+  return { product, relatedProducts }
 }
 
 export async function generateMetadata({
@@ -21,7 +55,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>
 }): Promise<Metadata> {
   const { id } = await params
-  const product = PRODUCTS.find((p) => p.id === Number(id))
+  const { product } = await loadProduct(id)
   if (!product) return { title: "Product Not Found — FashionHub" }
   return {
     title: `${product.name} — ${product.brand} | FashionHub`,
@@ -35,7 +69,7 @@ export default async function ProductPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const product = PRODUCTS.find((p) => p.id === Number(id)) ?? null
+  const { product, relatedProducts } = await loadProduct(id)
 
   if (!product) {
     return (
@@ -68,10 +102,6 @@ export default async function ProductPage({
       </div>
     )
   }
-
-  const relatedProducts = PRODUCTS.filter(
-    (p) => p.id !== product.id && p.category === product.category,
-  ).slice(0, 4)
 
   const categoryLabel =
     CATEGORIES.find((c) => c.id === product.category)?.label ??
@@ -133,7 +163,7 @@ export default async function ProductPage({
       <RelatedProducts relatedProducts={relatedProducts} category={product.category} />
 
       {/* Recently viewed */}
-      <RecentlyViewedPDP currentProductId={product.id} />
+      <RecentlyViewedPDP currentProductId={product._id ?? product.id} />
 
       <Footer />
       <WhatsAppFloat />

@@ -7,7 +7,7 @@ import { Heart } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addToCart } from "@/lib/store/cartSlice"
-import { toggleWishlist } from "@/lib/store/wishlistSlice"
+import { toggleWishlistItem } from "@/lib/store/wishlistSlice"
 import type { ClothingSize, Product } from "@/lib/data/products"
 
 interface ProductCardProps {
@@ -40,20 +40,25 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
   const [selectedSize, setSelectedSize] = useState<ClothingSize | null>(null)
   const [added, setAdded] = useState(false)
 
+  // Real backend products carry their Mongo _id — prefer it so cart/wishlist
+  // entries stay stable and can be persisted server-side (mock products fall
+  // back to the synthetic numeric id).
+  const productKey = product._id ?? product.id
+
   const isWishlisted = useAppSelector((s) =>
-    s.wishlist.items.some((i) => i.id === product.id),
+    s.wishlist.items.some((i) => String(i.id) === String(productKey)),
   )
 
   const firstWord = encodeURIComponent(product.name.split(" ")[0] || "Item")
   const imgUrl = `https://placehold.co/480x640/F5EFE6/2D2D2D?text=${firstWord}`
-  const productHref = `/product/${product.id}`
+  const productHref = `/product/${productKey}`
 
   const handleAddToCart = (size?: ClothingSize) => {
     const sz = size ?? selectedSize ?? product.sizes[0]
     if (!sz) return
     dispatch(
       addToCart({
-        id: product.id,
+        id: productKey,
         name: product.name,
         price: `৳${product.price.toLocaleString()}`,
         size: sz,
@@ -74,8 +79,8 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
     e.preventDefault()
     e.stopPropagation()
     dispatch(
-      toggleWishlist({
-        id: product.id,
+      toggleWishlistItem({
+        id: productKey,
         name: product.name,
         brand: product.brand,
         category: product.category,

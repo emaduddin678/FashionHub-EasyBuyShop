@@ -55,15 +55,15 @@ export default function AccountOverview({ onTabChange }: AccountOverviewProps) {
     <div>
       {/* Welcome row */}
       <div>
-        <h2 className="text-2xl font-bold text-[#1A2B5E]">Welcome back, Rahim! 👋</h2>
+        <h2 className="text-2xl font-bold text-brand-charcoal">Welcome back, Rahim! 👋</h2>
         <p className="text-gray-500 text-sm mt-1">Here&apos;s what&apos;s happening with your account.</p>
       </div>
 
       {/* Stats grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <Package size={20} className="text-[#1A2B5E] mx-auto mb-2" />
-          <p className="text-3xl font-bold text-[#1A2B5E]">4</p>
+          <Package size={20} className="text-brand-charcoal mx-auto mb-2" />
+          <p className="text-3xl font-bold text-brand-charcoal">4</p>
           <p className="text-xs text-gray-500 mt-1">Total Orders</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
@@ -72,8 +72,8 @@ export default function AccountOverview({ onTabChange }: AccountOverviewProps) {
           <p className="text-xs text-gray-500 mt-1">Active Orders</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <Heart size={20} className="text-[#D4A017] mx-auto mb-2" />
-          <p className="text-3xl font-bold text-[#D4A017]">{wishlistCount}</p>
+          <Heart size={20} className="text-brand-gold mx-auto mb-2" />
+          <p className="text-3xl font-bold text-brand-gold">{wishlistCount}</p>
           <p className="text-xs text-gray-500 mt-1">Wishlist Items</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
@@ -86,10 +86,10 @@ export default function AccountOverview({ onTabChange }: AccountOverviewProps) {
       {/* Recent orders */}
       <div className="mt-8">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-lg text-[#1A2B5E]">Recent Orders</h3>
+          <h3 className="font-semibold text-lg text-brand-charcoal">Recent Orders</h3>
           <button
             onClick={() => onTabChange("orders")}
-            className="text-sm text-[#D4A017] font-medium hover:underline"
+            className="text-sm text-brand-gold font-medium hover:underline"
           >
             View All →
           </button>
@@ -107,7 +107,7 @@ export default function AccountOverview({ onTabChange }: AccountOverviewProps) {
                     className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                   />
                   <div>
-                    <p className="text-sm font-medium text-[#1A2B5E]">{order.id}</p>
+                    <p className="text-sm font-medium text-brand-charcoal">{order.id}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{formatDate(order.date)}</p>
                     <p className="text-xs text-gray-500 mt-0.5">
                       {order.items} item{order.items > 1 ? "s" : ""} · ৳{order.total.toLocaleString()}
@@ -121,7 +121,7 @@ export default function AccountOverview({ onTabChange }: AccountOverviewProps) {
                   {order.status !== "cancelled" && (
                     <Link
                       href={`/track?orderId=${order.id}`}
-                      className="text-sm text-[#D4A017] font-medium hover:underline"
+                      className="text-sm text-brand-gold font-medium hover:underline"
                     >
                       Track →
                     </Link>
@@ -134,7 +134,7 @@ export default function AccountOverview({ onTabChange }: AccountOverviewProps) {
       </div>
 
       {/* Loyalty points mini card */}
-      <div className="mt-6 bg-[#1A2B5E] rounded-xl p-5 text-white">
+      <div className="mt-6 bg-brand-charcoal rounded-xl p-5 text-white">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-white/70 text-sm flex items-center gap-2">
@@ -144,12 +144,12 @@ export default function AccountOverview({ onTabChange }: AccountOverviewProps) {
             <p className="text-white/70 text-sm mt-1">Worth ৳125 in rewards</p>
           </div>
           <div className="flex-shrink-0 text-right">
-            <span className="inline-block bg-[#D4A017] text-[#1A2B5E] text-xs font-semibold px-3 py-1 rounded-full">
+            <span className="inline-block bg-brand-gold text-brand-charcoal text-xs font-semibold px-3 py-1 rounded-full">
               🥇 Gold Member
             </span>
             <p className="text-xs text-white/70 mt-3">750 points to Platinum</p>
             <div className="w-32 h-2 bg-white/30 rounded-full mt-1.5">
-              <div className="h-2 bg-[#D4A017] rounded-full" style={{ width: "62.5%" }} />
+              <div className="h-2 bg-brand-gold rounded-full" style={{ width: "62.5%" }} />
             </div>
           </div>
         </div>
@@ -165,10 +165,10 @@ export default function AccountOverview({ onTabChange }: AccountOverviewProps) {
           <button
             key={tab}
             onClick={() => onTabChange(tab)}
-            className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:border-[#1A2B5E] hover:shadow-sm transition-all cursor-pointer"
+            className="bg-white rounded-xl border border-gray-200 p-4 text-center hover:border-brand-charcoal hover:shadow-sm transition-all cursor-pointer"
           >
-            <Icon size={32} className="text-[#1A2B5E] mx-auto mb-2" />
-            <p className="text-sm font-medium text-[#1A2B5E]">{label}</p>
+            <Icon size={32} className="text-brand-charcoal mx-auto mb-2" />
+            <p className="text-sm font-medium text-brand-charcoal">{label}</p>
           </button>
         ))}
       </div>

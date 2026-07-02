@@ -15,12 +15,8 @@ import { ActiveFilterTags } from "@/components/storefront/plp/ActiveFilterTags"
 import { Pagination } from "@/components/storefront/plp/Pagination"
 import {
   type Product,
-  type ProductCategory,
   type ClothingSize,
   type Fabric,
-  getByCategory,
-  getOnSale,
-  getNewArrivals,
   CATEGORIES,
 } from "@/lib/data/products"
 
@@ -49,22 +45,6 @@ const PAGE_META: Record<string, { title: string; crumb: string; description: str
     crumb: "New Arrivals",
     description: "Fresh from the looms — explore our latest collections.",
   },
-}
-
-const CATEGORY_IDS = new Set(CATEGORIES.map((c) => c.id))
-
-function getBaseProducts(category: string): Product[] {
-  if (CATEGORY_IDS.has(category as ProductCategory)) {
-    return getByCategory(category as ProductCategory)
-  }
-  switch (category) {
-    case "sale":
-      return getOnSale()
-    case "new-arrivals":
-      return getNewArrivals()
-    default:
-      return []
-  }
 }
 
 // ── Category Banner ────────────────────────────────────────────────────────────
@@ -115,11 +95,17 @@ function CategoryBanner({ title, count, description }: { title: string; count: n
 
 // ── Main Component ─────────────────────────────────────────────────────────────
 
-export default function CategoryProductListingPage({ category }: { category: string }) {
+export default function CategoryProductListingPage({
+  category,
+  initialProducts,
+}: {
+  category: string
+  initialProducts: Product[]
+}) {
   if (!PAGE_META[category]) notFound()
 
   const meta = PAGE_META[category]
-  const baseProducts = useMemo(() => getBaseProducts(category), [category])
+  const baseProducts = initialProducts
 
   // Derived available filter options
   const availableCategories = useMemo(

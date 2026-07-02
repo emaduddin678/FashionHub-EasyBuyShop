@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation"
 import { Heart, Truck, Package, RotateCcw, X } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addToCart } from "@/lib/store/cartSlice"
-import { toggleWishlist } from "@/lib/store/wishlistSlice"
+import { toggleWishlistItem } from "@/lib/store/wishlistSlice"
+import { apiFetch } from "@/lib/api/client"
 import type { ClothingSize, Product, ProductColor } from "@/lib/data/products"
 
 const ALL_SIZES: ClothingSize[] = ["XS", "S", "M", "L", "XL", "XXL"]
@@ -186,17 +187,26 @@ export function ProductInfo({ product, categoryLabel }: ProductInfoProps) {
   const [showSizeGuide, setShowSizeGuide] = useState(false)
   const [copied, setCopied] = useState(false)
 
+  const productKey = product._id ?? product.id
+
   const isWishlisted = useAppSelector((s) =>
-    s.wishlist.items.some((i) => i.id === product.id),
+    s.wishlist.items.some((i) => String(i.id) === String(productKey)),
   )
 
   const savings = product.originalPrice ? product.originalPrice - product.price : 0
+
+  // Silently record a view against the real backend product — best-effort,
+  // never blocks or errors the page if it fails.
+  useEffect(() => {
+    if (!product._id) return
+    apiFetch(`/api/products/${product._id}/view`, { method: "PATCH" }).catch(() => {})
+  }, [product._id])
 
   const dispatchCart = useCallback(() => {
     if (!selectedSize) return
     for (let i = 0; i < qty; i++) {
       dispatch(addToCart({
-        id: product.id,
+        id: productKey,
         name: product.name,
         price: `৳${product.price.toLocaleString()}`,
         size: selectedSize,
@@ -220,8 +230,8 @@ export function ProductInfo({ product, categoryLabel }: ProductInfoProps) {
   }
 
   const handleWishlist = () => {
-    dispatch(toggleWishlist({
-      id: product.id,
+    dispatch(toggleWishlistItem({
+      id: productKey,
       name: product.name,
       brand: product.brand,
       category: product.category,

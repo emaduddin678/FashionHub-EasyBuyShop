@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { BRANDS } from "@/lib/data/products"
 import type { Product } from "@/lib/data/products"
+import { fetchProductReviews, type BackendReview } from "@/lib/api/products"
 
 // ── Care icons ─────────────────────────────────────────────────────────────────
 
@@ -96,8 +97,92 @@ function StarRow({ rating }: { rating: number }) {
   )
 }
 
-function ReviewsPanel({ rating, reviewCount }: { rating: number; reviewCount: number }) {
+interface DisplayReview {
+  id: string
+  name: string
+  initial: string
+  verified: boolean
+  rating: number
+  date: string
+  comment: string
+}
+
+function fromMock(): DisplayReview[] {
+  return REVIEWS.map((r) => ({
+    id: String(r.id),
+    name: r.name,
+    initial: r.initial,
+    verified: r.verified,
+    rating: r.rating,
+    date: r.date,
+    comment: r.comment,
+  }))
+}
+
+function fromBackend(reviews: BackendReview[]): DisplayReview[] {
+  return reviews.map((r) => ({
+    id: r._id,
+    name: r.userName,
+    initial: (r.userName?.[0] ?? "?").toUpperCase(),
+    verified: r.isVerifiedPurchase,
+    rating: r.rating,
+    date: new Date(r.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+    comment: r.comment,
+  }))
+}
+
+// A real Mongo _id — only backend-sourced products have one, so this is what
+// decides whether the panel fetches live reviews or falls back to demo data.
+function ReviewsPanel({ productId, rating, reviewCount }: { productId?: string; rating: number; reviewCount: number }) {
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(Boolean(productId))
+  const [liveReviews, setLiveReviews] = useState<DisplayReview[] | null>(null)
+  const [liveRating, setLiveRating] = useState(rating)
+  const [liveCount, setLiveCount] = useState(reviewCount)
+  const [liveDist, setLiveDist] = useState<Record<string, number> | null>(null)
+
+  useEffect(() => {
+    if (!productId) return
+    let cancelled = false
+    setLoading(true)
+    fetchProductReviews(productId, { page: 1, limit: 10 })
+      .then((data) => {
+        if (cancelled) return
+        setLiveReviews(fromBackend(data.reviews))
+        setLiveRating(data.averageRating || rating)
+        setLiveCount(data.total)
+        setLiveDist(data.ratingDistribution)
+      })
+      .catch(() => { if (!cancelled) setLiveReviews([]) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productId])
+
+  const isLive = productId !== undefined
+  const displayRating = isLive ? liveRating : rating
+  const displayCount = isLive ? liveCount : reviewCount
+  const distRows = isLive && liveDist
+    ? [5, 4, 3, 2, 1].map((stars) => ({
+        stars,
+        pct: liveCount > 0 ? Math.round(((liveDist[String(stars)] ?? 0) / liveCount) * 100) : 0,
+      }))
+    : RATING_DIST
+  const cards = isLive ? (liveReviews ?? []) : fromMock()
+
+  if (isLive && loading) {
+    return (
+      <div className="max-w-3xl animate-pulse">
+        <div className="flex gap-8 pb-8 mb-8" style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+          <div className="w-[120px] h-24 rounded-xl" style={{ background: "var(--color-brand-beige)" }} />
+          <div className="flex-1 h-24 rounded-xl" style={{ background: "var(--color-brand-beige)" }} />
+        </div>
+        {[0, 1].map((i) => (
+          <div key={i} className="h-24 rounded-xl mb-4" style={{ background: "var(--color-brand-beige)" }} />
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-3xl">
@@ -112,17 +197,17 @@ function ReviewsPanel({ rating, reviewCount }: { rating: number; reviewCount: nu
             className="font-heading font-light text-brand-charcoal"
             style={{ fontSize: "4rem", lineHeight: 1 }}
           >
-            {rating.toFixed(1)}
+            {displayRating.toFixed(1)}
           </span>
-          <StarRow rating={Math.round(rating)} />
+          <StarRow rating={Math.round(displayRating)} />
           <p className="font-sans text-brand-charcoal/45" style={{ fontSize: "12px" }}>
-            {reviewCount} reviews
+            {displayCount} reviews
           </p>
         </div>
 
         {/* Bar chart */}
         <div className="flex-1 flex flex-col gap-2.5">
-          {RATING_DIST.map(({ stars, pct }) => (
+          {distRows.map(({ stars, pct }) => (
             <div key={stars} className="flex items-center gap-3">
               <span
                 className="font-sans text-brand-charcoal/55 text-right"
@@ -151,72 +236,88 @@ function ReviewsPanel({ rating, reviewCount }: { rating: number; reviewCount: nu
       </div>
 
       {/* Review cards */}
-      <div className="flex flex-col gap-4 mb-8">
-        {REVIEWS.map((r) => (
-          <div
-            key={r.id}
-            className="rounded-xl p-5"
-            style={{
-              background: "var(--color-brand-beige)",
-              border: "1px solid var(--color-border-light)",
-            }}
-          >
-            <div className="flex items-start gap-3">
-              {/* Avatar */}
-              <span
-                className="w-9 h-9 rounded-full flex items-center justify-center font-sans font-semibold text-brand-ivory flex-shrink-0"
-                style={{ background: "var(--color-brand-mauve)", fontSize: "14px" }}
-              >
-                {r.initial}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-sans font-semibold text-brand-charcoal" style={{ fontSize: "13px" }}>
-                      {r.name}
-                    </span>
-                    {r.verified && (
-                      <span
-                        className="font-sans font-semibold rounded-full px-2 py-0.5"
-                        style={{
-                          fontSize: "10px",
-                          background: "rgba(74,124,89,0.12)",
-                          color: "#4a7c59",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        Verified
-                      </span>
-                    )}
-                  </div>
-                  <span className="font-sans text-brand-charcoal/40" style={{ fontSize: "12px" }}>
-                    {r.date}
-                  </span>
-                </div>
-                <StarRow rating={r.rating} />
-                <p
-                  className="font-sans text-brand-charcoal/70 leading-relaxed mt-2"
-                  style={{ fontSize: "14px" }}
+      {cards.length === 0 ? (
+        <p className="font-sans text-brand-charcoal/45 mb-8" style={{ fontSize: "14px" }}>
+          No reviews yet — be the first to share your thoughts.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-4 mb-8">
+          {cards.map((r) => (
+            <div
+              key={r.id}
+              className="rounded-xl p-5"
+              style={{
+                background: "var(--color-brand-beige)",
+                border: "1px solid var(--color-border-light)",
+              }}
+            >
+              <div className="flex items-start gap-3">
+                {/* Avatar */}
+                <span
+                  className="w-9 h-9 rounded-full flex items-center justify-center font-sans font-semibold text-brand-ivory flex-shrink-0"
+                  style={{ background: "var(--color-brand-mauve)", fontSize: "14px" }}
                 >
-                  {r.comment}
-                </p>
+                  {r.initial}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-sans font-semibold text-brand-charcoal" style={{ fontSize: "13px" }}>
+                        {r.name}
+                      </span>
+                      {r.verified && (
+                        <span
+                          className="font-sans font-semibold rounded-full px-2 py-0.5"
+                          style={{
+                            fontSize: "10px",
+                            background: "rgba(74,124,89,0.12)",
+                            color: "#4a7c59",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          Verified
+                        </span>
+                      )}
+                    </div>
+                    <span className="font-sans text-brand-charcoal/40" style={{ fontSize: "12px" }}>
+                      {r.date}
+                    </span>
+                  </div>
+                  <StarRow rating={r.rating} />
+                  <p
+                    className="font-sans text-brand-charcoal/70 leading-relaxed mt-2"
+                    style={{ fontSize: "14px" }}
+                  >
+                    {r.comment}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Write a review CTA */}
       {submitted ? (
         <p className="font-sans font-semibold text-brand-rose" style={{ fontSize: "14px" }}>
           ✓ Thank you for your review!
         </p>
+      ) : isLive ? (
+        <a
+          href="/account/login"
+          className="inline-block font-sans font-semibold rounded-full px-8 py-3 transition-colors"
+          style={{
+            fontSize: "14px",
+            background: "transparent",
+            border: "1.5px solid var(--color-brand-rose)",
+            color: "var(--color-brand-rose)",
+          }}
+        >
+          Sign In to Write a Review
+        </a>
       ) : (
         <button
-          onClick={() => {
-            console.log("[FashionHub] Write a review clicked")
-            setSubmitted(true)
-          }}
+          onClick={() => setSubmitted(true)}
           className="font-sans font-semibold rounded-full px-8 py-3 transition-colors"
           style={{
             fontSize: "14px",
@@ -254,6 +355,7 @@ const TABS: { id: TabId; label: string }[] = [
 
 export function PDPTabs({ product }: { product: Product }) {
   const [activeTab, setActiveTab] = useState<TabId>("description")
+  const productId = product._id
 
   const origin = BRANDS.find((b) => b.name === product.brand)?.origin
   const originLabel = origin === "PK" ? "Pakistan" : "Bangladesh"
@@ -364,7 +466,7 @@ export function PDPTabs({ product }: { product: Product }) {
 
         {/* Reviews */}
         {activeTab === "reviews" && (
-          <ReviewsPanel rating={product.rating} reviewCount={product.reviewCount} />
+          <ReviewsPanel productId={productId} rating={product.rating} reviewCount={product.reviewCount} />
         )}
       </div>
     </div>

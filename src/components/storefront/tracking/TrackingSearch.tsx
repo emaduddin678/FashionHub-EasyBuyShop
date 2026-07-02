@@ -41,7 +41,7 @@ export function TrackingSearch({ initialOrderId = "", onSearch, loading, error }
                 onChange={(e) => setOrderId(e.target.value)}
                 placeholder="e.g. FBD-1782447580375"
                 required
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/30 focus:border-[#1A2B5E] transition"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-charcoal/30 focus:border-brand-charcoal transition"
               />
               <p className="text-xs text-gray-400 mt-1.5">Find your Order ID in the confirmation email or SMS</p>
             </div>
@@ -56,7 +56,7 @@ export function TrackingSearch({ initialOrderId = "", onSearch, loading, error }
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+880 1XXX-XXXXXX"
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/30 focus:border-[#1A2B5E] transition"
+                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-brand-charcoal/30 focus:border-brand-charcoal transition"
               />
               <p className="text-xs text-gray-400 mt-1.5">The phone number used during checkout</p>
             </div>
@@ -66,7 +66,7 @@ export function TrackingSearch({ initialOrderId = "", onSearch, loading, error }
           <button
             type="submit"
             disabled={loading || !orderId.trim()}
-            className="w-full bg-[#1A2B5E] hover:bg-[#0d1733] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+            className="w-full bg-brand-charcoal hover:bg-[#0d1733] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
           >
             {loading ? (
               <>

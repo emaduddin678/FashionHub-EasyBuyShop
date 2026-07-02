@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addToCart } from "@/lib/store/cartSlice"
-import { toggleWishlist } from "@/lib/store/wishlistSlice"
+import { toggleWishlistItem } from "@/lib/store/wishlistSlice"
 import type { Product, ClothingSize } from "@/lib/data/products"
 
 interface QuickViewModalProps {
@@ -34,8 +34,10 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   const [selectedSize, setSelectedSize] = useState<ClothingSize | null>(null)
   const [added, setAdded] = useState(false)
 
+  const productKey = product?._id ?? product?.id
+
   const isWishlisted = useAppSelector((s) =>
-    product ? s.wishlist.items.some((i) => i.id === product.id) : false
+    productKey !== undefined ? s.wishlist.items.some((i) => String(i.id) === String(productKey)) : false
   )
 
   useEffect(() => {
@@ -66,7 +68,7 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   const handleAddToCart = () => {
     if (!selectedSize) return
     dispatch(addToCart({
-      id: product.id,
+      id: productKey!,
       name: product.name,
       price: `৳${product.price.toLocaleString()}`,
       size: selectedSize,
@@ -80,8 +82,8 @@ export function QuickViewModal({ product, onClose }: QuickViewModalProps) {
   }
 
   const handleWishlist = () => {
-    dispatch(toggleWishlist({
-      id: product.id,
+    dispatch(toggleWishlistItem({
+      id: productKey!,
       name: product.name,
       brand: product.brand,
       category: product.category,

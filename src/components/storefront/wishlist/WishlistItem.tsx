@@ -4,14 +4,14 @@ import { useState } from "react"
 import Link from "next/link"
 import { ShoppingCart, X } from "lucide-react"
 import { useAppDispatch } from "@/lib/store/hooks"
-import { removeFromWishlist, type WishlistItem as WishlistItemType } from "@/lib/store/wishlistSlice"
+import { removeWishlistItem, toggleWishlistItem, type WishlistItem as WishlistItemType } from "@/lib/store/wishlistSlice"
 import { addToCart } from "@/lib/store/cartSlice"
 import type { ClothingSize } from "@/lib/data/products"
 
 interface Props {
   item: WishlistItemType
   isSelected: boolean
-  onToggleSelect: (id: number) => void
+  onToggleSelect: (id: string | number) => void
   showCheckbox: boolean
   onToast: (msg: string, undoFn?: () => void) => void
   onAddedToCart: (name: string) => void
@@ -47,13 +47,10 @@ export function WishlistItemCard({
 
   function handleRemove() {
     setRemoved(true)
-    dispatch(removeFromWishlist({ id: item.id }))
+    dispatch(removeWishlistItem(item.id))
     onToast(`Removed from wishlist`, () => {
       setRemoved(false)
-      dispatch({
-        type: "wishlist/addToWishlist",
-        payload: item,
-      })
+      dispatch(toggleWishlistItem(item))
     })
   }
 
@@ -92,7 +89,7 @@ export function WishlistItemCard({
           type="checkbox"
           checked={isSelected}
           onChange={() => onToggleSelect(item.id)}
-          className="w-[18px] h-[18px] rounded accent-[#1A2B5E] cursor-pointer"
+          className="w-[18px] h-[18px] rounded accent-brand-charcoal cursor-pointer"
           aria-label={`Select ${item.name}`}
         />
       </div>
@@ -108,7 +105,7 @@ export function WishlistItemCard({
 
         {/* Badge */}
         {item.badge && (
-          <span className="absolute top-3 left-8 bg-[#D4A017] text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide z-10">
+          <span className="absolute top-3 left-8 bg-brand-gold text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide z-10">
             {item.badge}
           </span>
         )}
@@ -132,26 +129,26 @@ export function WishlistItemCard({
 
       {/* Product info */}
       <div className="p-4">
-        <p className="text-[10px] uppercase font-medium text-[#D4A017] tracking-wider">
+        <p className="text-[10px] uppercase font-medium text-brand-gold tracking-wider">
           {item.brand}
         </p>
         <Link
           href={`/product/${item.id}`}
-          className="text-sm font-semibold text-[#1A2B5E] mt-1 block hover:underline leading-snug"
+          className="text-sm font-semibold text-brand-charcoal mt-1 block hover:underline leading-snug"
         >
           {item.name}
         </Link>
 
         {/* Price row */}
         <div className="flex items-center gap-2 mt-2">
-          <span className="font-bold text-[#1A2B5E]">৳{item.price.toLocaleString()}</span>
+          <span className="font-bold text-brand-charcoal">৳{item.price.toLocaleString()}</span>
           {item.originalPrice > item.price && (
             <span className="text-gray-400 text-sm line-through">
               ৳{item.originalPrice.toLocaleString()}
             </span>
           )}
           {discountPct && (
-            <span className="text-xs font-semibold text-[#D4A017]">{discountPct}% OFF</span>
+            <span className="text-xs font-semibold text-brand-gold">{discountPct}% OFF</span>
           )}
         </div>
 
@@ -188,10 +185,10 @@ export function WishlistItemCard({
                       unavail
                         ? "bg-gray-100 text-gray-300 line-through cursor-not-allowed border-gray-100"
                         : selectedSize === sz
-                        ? "bg-[#1A2B5E] text-white border-[#1A2B5E]"
+                        ? "bg-brand-charcoal text-white border-brand-charcoal"
                         : sizeError
                         ? "bg-white text-gray-600 border-red-400"
-                        : "bg-white text-gray-600 border-gray-200 hover:border-[#1A2B5E]"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-brand-charcoal"
                     }`}
                   >
                     {sz}
@@ -207,14 +204,14 @@ export function WishlistItemCard({
           <button
             onClick={handleAddToCart}
             disabled={isOutOfStock}
-            className="flex items-center justify-center gap-1.5 bg-[#1A2B5E] text-white text-sm py-2.5 rounded-lg hover:bg-[#152249] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center justify-center gap-1.5 bg-brand-charcoal text-white text-sm py-2.5 rounded-lg hover:bg-[#152249] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <ShoppingCart size={14} />
             Add to Cart
           </button>
           <Link
             href={`/product/${item.id}`}
-            className="flex items-center justify-center bg-white border border-[#1A2B5E] text-[#1A2B5E] text-sm py-2.5 rounded-lg hover:bg-[#1A2B5E] hover:text-white transition-colors text-center"
+            className="flex items-center justify-center bg-white border border-brand-charcoal text-brand-charcoal text-sm py-2.5 rounded-lg hover:bg-brand-charcoal hover:text-white transition-colors text-center"
           >
             View Product
           </Link>

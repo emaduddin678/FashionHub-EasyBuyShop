@@ -41,13 +41,13 @@ export default function AccountSidebar({ activeTab, onTabChange }: AccountSideba
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden sticky top-24">
       {/* Profile header */}
-      <div className="bg-[#1A2B5E] p-6 text-center">
-        <div className="w-[72px] h-[72px] rounded-full bg-[#D4A017] flex items-center justify-center mx-auto">
+      <div className="bg-brand-charcoal p-6 text-center">
+        <div className="w-[72px] h-[72px] rounded-full bg-brand-gold flex items-center justify-center mx-auto">
           <span className="text-2xl font-bold text-white">RU</span>
         </div>
         <p className="text-white font-semibold mt-3">Rahim Uddin</p>
         <p className="text-white/70 text-sm mt-0.5">rahim@example.com</p>
-        <span className="inline-block bg-[#D4A017] text-[#1A2B5E] text-xs font-semibold px-3 py-1 rounded-full mt-2">
+        <span className="inline-block bg-brand-gold text-brand-charcoal text-xs font-semibold px-3 py-1 rounded-full mt-2">
           🥇 Gold Member
         </span>
       </div>
@@ -77,7 +77,7 @@ export default function AccountSidebar({ activeTab, onTabChange }: AccountSideba
               onClick={() => onTabChange(item.id as AccountTab)}
               className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-left ${
                 isActive
-                  ? "bg-[#1A2B5E] text-white"
+                  ? "bg-brand-charcoal text-white"
                   : "text-gray-600 hover:bg-gray-50"
               }`}
             >

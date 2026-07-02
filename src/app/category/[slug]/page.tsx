@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import CategoryProductListingPage from "@/components/pages/CategoryProductListingPage"
-import { CATEGORIES } from "@/lib/data/products"
+import { CATEGORIES, getByCategory, getOnSale, getNewArrivals, type Product, type ProductCategory } from "@/lib/data/products"
+import { fetchProductsByCategory, normalizeProduct } from "@/lib/api/products"
 
 const VALID_SLUGS = [
   ...CATEGORIES.map((c) => c.id),
@@ -26,11 +27,31 @@ export async function generateMetadata({
   }
 }
 
+const CATEGORY_IDS = new Set(CATEGORIES.map((c) => c.id))
+
+function getMockProducts(category: string): Product[] {
+  if (CATEGORY_IDS.has(category as ProductCategory)) return getByCategory(category as ProductCategory)
+  if (category === "sale") return getOnSale()
+  if (category === "new-arrivals") return getNewArrivals()
+  return []
+}
+
 export default async function Page({
   params,
 }: {
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  return <CategoryProductListingPage category={slug} />
+
+  let initialProducts = getMockProducts(slug)
+  try {
+    const apiProducts = await fetchProductsByCategory(slug)
+    if (apiProducts.length > 0) {
+      initialProducts = apiProducts.map((p, i) => normalizeProduct(p, i))
+    }
+  } catch {
+    // fall back to local mock data
+  }
+
+  return <CategoryProductListingPage category={slug} initialProducts={initialProducts} />
 }

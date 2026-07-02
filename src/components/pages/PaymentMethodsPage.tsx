@@ -98,12 +98,12 @@ const methods = [
 
 export default function PaymentMethodsPage() {
   return (
-    <div className="min-h-screen font-sans bg-[#f4f5f9]">
+    <div className="min-h-screen font-sans bg-brand-ivory">
       <AnnouncementBar />
       <Header />
 
       {/* Hero */}
-      <div className="bg-[#1A2B5E] py-10 text-center">
+      <div className="bg-brand-charcoal py-10 text-center">
         <h1 className="text-3xl font-bold text-white">Payment Methods</h1>
         <p className="text-white/70 text-sm mt-2">
           Secure, fast, and convenient payment options for every shopper
@@ -116,7 +116,7 @@ export default function PaymentMethodsPage() {
           <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-8 py-5 flex items-center gap-4" style={{ borderLeft: `4px solid ${method.color}` }}>
               <span className="text-3xl">{method.logo}</span>
-              <h2 className="text-lg font-bold text-[#1A2B5E]">{method.name}</h2>
+              <h2 className="text-lg font-bold text-brand-charcoal">{method.name}</h2>
             </div>
             <div className="px-8 pb-7 pt-2 space-y-5">
               <div>
@@ -138,7 +138,7 @@ export default function PaymentMethodsPage() {
                 <ul className="space-y-1.5">
                   {method.tips.map((tip, j) => (
                     <li key={j} className="flex items-start gap-2 text-sm text-gray-600 leading-relaxed">
-                      <span className="text-[#D4A017] mt-0.5 shrink-0">•</span>
+                      <span className="text-brand-gold mt-0.5 shrink-0">•</span>
                       {tip}
                     </li>
                   ))}
@@ -152,8 +152,8 @@ export default function PaymentMethodsPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
           <p className="text-sm text-gray-600">
             Having trouble with a payment? Contact us at{" "}
-            <span className="font-semibold text-[#1A2B5E]">hello@fashionhub.com.bd</span> or WhatsApp{" "}
-            <span className="font-semibold text-[#1A2B5E]">+880 1712-345678</span>.
+            <span className="font-semibold text-brand-charcoal">hello@fashionhub.com.bd</span> or WhatsApp{" "}
+            <span className="font-semibold text-brand-charcoal">+880 1712-345678</span>.
             We&apos;re available 9 AM – 9 PM, 7 days a week.
           </p>
         </div>

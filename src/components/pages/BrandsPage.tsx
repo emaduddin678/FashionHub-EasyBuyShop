@@ -1,15 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { AnnouncementBar } from "@/components/storefront/AnnouncementBar"
 import { Header } from "@/components/storefront/Header"
 import { Footer } from "@/components/storefront/Footer"
 import { WhatsAppFloat } from "@/components/storefront/WhatsAppFloat"
-import { BRANDS } from "@/lib/data/products"
+import { fetchBrands, type BackendBrand } from "@/lib/api/brands"
 import { ArrowRight, ShieldCheck, RotateCcw, Tag, Award } from "lucide-react"
-
-type Filter = "All" | "BD Labels" | "Pakistani Lawn"
 
 const BRAND_DESCRIPTIONS: Record<string, string> = {
   Aarong: "Bangladesh's iconic fair-trade label. Handloom, block print, and artisan craft since 1978.",
@@ -30,13 +28,16 @@ const whyUs = [
 ]
 
 export default function BrandsPage() {
-  const [filter, setFilter] = useState<Filter>("All")
+  const [brands, setBrands] = useState<BackendBrand[] | null>(null)
+  const [error, setError] = useState("")
 
-  const visible = BRANDS.filter((b) => {
-    if (filter === "BD Labels")     return b.origin === "BD"
-    if (filter === "Pakistani Lawn") return b.origin === "PK"
-    return true
-  })
+  useEffect(() => {
+    let cancelled = false
+    fetchBrands()
+      .then((data) => { if (!cancelled) setBrands(data) })
+      .catch(() => { if (!cancelled) setError("Couldn't load brands right now.") })
+    return () => { cancelled = true }
+  }, [])
 
   return (
     <div className="min-h-screen font-sans" style={{ background: "var(--color-brand-ivory)" }}>
@@ -67,62 +68,44 @@ export default function BrandsPage() {
             className="mt-4 mx-auto max-w-xl"
             style={{ fontSize: 17, color: "rgba(255,255,255,0.85)", lineHeight: 1.6 }}
           >
-            From Dhaka&apos;s favourite local labels to Pakistan&apos;s most iconic lawns.
+            Authentic brands, sourced direct from our partner distributors.
           </p>
-          <p
-            className="mt-2"
-            style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}
-          >
-            {BRANDS.length} brands &nbsp;·&nbsp; 500+ styles &nbsp;·&nbsp; 100% authentic
-          </p>
-        </div>
-      </div>
-
-      {/* Filter tabs */}
-      <div
-        className="sticky top-0 z-20 py-3 px-5"
-        style={{
-          background: "var(--color-brand-ivory)",
-          borderBottom: "1px solid var(--color-border-light)",
-        }}
-      >
-        <div className="max-w-5xl mx-auto flex items-center gap-2">
-          {(["All", "BD Labels", "Pakistani Lawn"] as Filter[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className="px-4 py-2 rounded-full text-sm font-medium transition-all"
-              style={{
-                background: filter === f ? "var(--color-brand-rose)" : "transparent",
-                color: filter === f ? "#fff" : "var(--color-brand-charcoal)",
-                border: filter === f ? "1.5px solid var(--color-brand-rose)" : "1.5px solid var(--color-border)",
-                opacity: filter === f ? 1 : 0.7,
-              }}
+          {brands && (
+            <p
+              className="mt-2"
+              style={{ fontSize: 13, color: "rgba(255,255,255,0.6)" }}
             >
-              {f}
-              <span
-                className="ml-1.5 text-xs"
-                style={{ opacity: 0.65 }}
-              >
-                {f === "All"
-                  ? BRANDS.length
-                  : f === "BD Labels"
-                  ? BRANDS.filter((b) => b.origin === "BD").length
-                  : BRANDS.filter((b) => b.origin === "PK").length}
-              </span>
-            </button>
-          ))}
+              {brands.length} brands &nbsp;·&nbsp; 100% authentic
+            </p>
+          )}
         </div>
       </div>
 
       {/* Brand grid */}
       <div className="max-w-5xl mx-auto px-5 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-          {visible.map((brand) => {
-            const isBD = brand.origin === "BD"
-            return (
+        {error && (
+          <p className="text-center text-sm mb-6" style={{ color: "var(--color-brand-rose)" }}>{error}</p>
+        )}
+
+        {brands === null && !error && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+            {[0, 1, 2, 3, 5, 6].map((i) => (
+              <div key={i} className="h-64 rounded-xl animate-pulse" style={{ background: "var(--color-brand-beige)" }} />
+            ))}
+          </div>
+        )}
+
+        {brands !== null && brands.length === 0 && (
+          <p className="text-center text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.5 }}>
+            No brands available right now — check back soon.
+          </p>
+        )}
+
+        {brands !== null && brands.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
+            {brands.map((brand) => (
               <div
-                key={brand.id}
+                key={brand._id}
                 className="flex flex-col rounded-xl p-7 transition-all"
                 style={{
                   background: "var(--color-brand-beige)",
@@ -138,7 +121,7 @@ export default function BrandsPage() {
                   ;(e.currentTarget as HTMLDivElement).style.borderColor = "var(--color-border-light)"
                 }}
               >
-                {/* Logo placeholder */}
+                {/* Logo */}
                 <div
                   className="flex items-center justify-center rounded-lg mb-5"
                   style={{
@@ -147,49 +130,35 @@ export default function BrandsPage() {
                     border: "1px solid var(--color-border)",
                   }}
                 >
-                  <span
-                    className="font-heading"
-                    style={{
-                      fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
-                      color: "var(--color-brand-charcoal)",
-                      letterSpacing: "-0.01em",
-                    }}
-                  >
-                    {brand.name}
-                  </span>
+                  {brand.logoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={brand.logoUrl} alt={brand.name} style={{ maxHeight: "60%", maxWidth: "70%", objectFit: "contain" }} />
+                  ) : (
+                    <span
+                      className="font-heading"
+                      style={{
+                        fontSize: "clamp(1.1rem, 2vw, 1.4rem)",
+                        color: "var(--color-brand-charcoal)",
+                        letterSpacing: "-0.01em",
+                      }}
+                    >
+                      {brand.name}
+                    </span>
+                  )}
                 </div>
-
-                {/* Origin badge */}
-                <span
-                  className="self-start text-xs font-semibold px-2.5 py-1 rounded-full mb-3"
-                  style={{
-                    background: isBD ? "rgba(90,138,106,0.12)" : "rgba(200,140,150,0.15)",
-                    color: isBD ? "#5a8a6a" : "var(--color-brand-rose)",
-                  }}
-                >
-                  {isBD ? "BD Label" : "Pakistani Lawn"}
-                </span>
 
                 {/* Description */}
                 <p
                   className="text-sm leading-relaxed flex-1"
                   style={{ color: "var(--color-brand-charcoal)", opacity: 0.7 }}
                 >
-                  {BRAND_DESCRIPTIONS[brand.name]}
-                </p>
-
-                {/* Product count */}
-                <p
-                  className="text-xs mt-3 mb-4"
-                  style={{ color: "var(--color-brand-charcoal)", opacity: 0.45 }}
-                >
-                  {brand.productCount} styles available
+                  {BRAND_DESCRIPTIONS[brand.name] || brand.description || `Shop the full ${brand.name} collection.`}
                 </p>
 
                 {/* CTA */}
                 <Link
-                  href={`/brands/${brand.id}`}
-                  className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg text-sm font-semibold transition-all"
+                  href={`/brands/${brand.slug}`}
+                  className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-lg text-sm font-semibold transition-all mt-4"
                   style={{
                     border: "1.5px solid var(--color-brand-rose)",
                     color: "var(--color-brand-rose)",
@@ -210,9 +179,9 @@ export default function BrandsPage() {
                   <ArrowRight size={14} />
                 </Link>
               </div>
-            )
-          })}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Why FashionHub */}

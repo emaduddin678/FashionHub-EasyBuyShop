@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ShoppingBag, Truck } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
@@ -11,19 +11,12 @@ import {
   decrementQuantity,
   type CartItem,
 } from "@/lib/store/cartSlice"
+import { applyCouponCode, type PromoResult } from "@/lib/api/discounts"
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
 const FREE_SHIPPING_THRESHOLD = 2000
 const SHIPPING_FEE = 120
-
-type PromoResult = { type: "percent"; value: number } | { type: "freeship" }
-
-const PROMO_CODES: Record<string, PromoResult> = {
-  EID20:     { type: "percent", value: 20 },
-  WELCOME10: { type: "percent", value: 10 },
-  FREESHIP:  { type: "freeship" },
-}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -175,7 +168,7 @@ function CartItemRow({
 function OrderSummary({
   subtotal,
   totalQty,
-  discountPct,
+  discountLabel,
   discountAmount,
   shippingFee,
   total,
@@ -184,13 +177,13 @@ function OrderSummary({
   coupon,
   onCouponChange,
   onApplyCoupon,
+  couponLoading,
   couponError,
   couponSuccess,
-  appliedPromo,
 }: {
   subtotal: number
   totalQty: number
-  discountPct: number
+  discountLabel: string
   discountAmount: number
   shippingFee: number
   total: number
@@ -199,9 +192,9 @@ function OrderSummary({
   coupon: string
   onCouponChange: (v: string) => void
   onApplyCoupon: () => void
+  couponLoading: boolean
   couponError: string
   couponSuccess: string
-  appliedPromo: PromoResult | null
 }) {
   return (
     <div
@@ -233,7 +226,7 @@ function OrderSummary({
           {discountAmount > 0 && (
             <div className="flex justify-between">
               <span className="font-sans text-brand-charcoal/60" style={{ fontSize: "14px" }}>
-                Discount ({discountPct}% off)
+                Discount ({discountLabel})
               </span>
               <span className="font-sans font-semibold" style={{ fontSize: "14px", color: "#4a7c59" }}>
                 −{taka(discountAmount)}
@@ -322,12 +315,13 @@ function OrderSummary({
             />
             <button
               onClick={onApplyCoupon}
-              className="font-sans font-semibold rounded-full px-4 py-2 text-brand-ivory transition-colors whitespace-nowrap"
+              disabled={couponLoading || !coupon.trim()}
+              className="font-sans font-semibold rounded-full px-4 py-2 text-brand-ivory transition-colors whitespace-nowrap disabled:opacity-60"
               style={{ fontSize: "13px", background: "var(--color-brand-rose)" }}
               onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--color-brand-mauve)" }}
               onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "var(--color-brand-rose)" }}
             >
-              Apply
+              {couponLoading ? "Checking…" : "Apply"}
             </button>
           </div>
           {couponError && (
@@ -390,16 +384,26 @@ export function CartPage() {
 
   const [coupon, setCoupon] = useState("")
   const [appliedPromo, setAppliedPromo] = useState<PromoResult | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState("")
   const [couponSuccess, setCouponSuccess] = useState("")
+
+  // Restore a coupon applied earlier in this session (e.g. before navigating away and back)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("appliedPromo")
+      if (raw) setAppliedPromo(JSON.parse(raw))
+    } catch {
+      // ignore
+    }
+  }, [])
 
   // ── Derived totals ──────────────────────────────────────────────────────────
   const subtotal = items.reduce((s, i) => s + parsePrice(i.price) * i.quantity, 0)
   const totalQty = items.reduce((s, i) => s + i.quantity, 0)
-  const discountPct = appliedPromo?.type === "percent" ? appliedPromo.value : 0
-  const discountAmount = Math.round((subtotal * discountPct) / 100)
-  const afterDiscount = subtotal - discountAmount
-  const freeShip = appliedPromo?.type === "freeship"
+  const discountAmount = appliedPromo?.discountAmount ?? 0
+  const afterDiscount = Math.max(subtotal - discountAmount, 0)
+  const freeShip = appliedPromo?.freeShipping ?? false
   const shippingFee = afterDiscount >= FREE_SHIPPING_THRESHOLD || freeShip ? 0 : SHIPPING_FEE
   const total = afterDiscount + shippingFee
   const remaining = Math.max(FREE_SHIPPING_THRESHOLD - subtotal, 0)
@@ -410,19 +414,33 @@ export function CartPage() {
     dispatch(removeFromCart({ id: item.id, size: item.size }))
   }
 
-  function handleApplyCoupon() {
+  async function handleApplyCoupon() {
     const code = coupon.trim().toUpperCase()
-    const promo = PROMO_CODES[code]
-    if (promo) {
-      setAppliedPromo(promo)
-      setCouponSuccess(
-        promo.type === "percent" ? `${promo.value}% discount applied!` : "Free shipping applied!",
-      )
-      setCouponError("")
-    } else {
-      setCouponError("Invalid code. Try EID20, WELCOME10, or FREESHIP.")
-      setCouponSuccess("")
-      setAppliedPromo(null)
+    if (!code) return
+    setCouponLoading(true)
+    setCouponError("")
+    setCouponSuccess("")
+    try {
+      const { payload } = await applyCouponCode(code, subtotal)
+      if (payload.valid && payload.code) {
+        const promo: PromoResult = {
+          code: payload.code,
+          discountAmount: payload.discountAmount ?? 0,
+          freeShipping: payload.freeShipping ?? false,
+          label: payload.label ?? code,
+        }
+        setAppliedPromo(promo)
+        sessionStorage.setItem("appliedPromo", JSON.stringify(promo))
+        setCouponSuccess(promo.freeShipping ? "Free shipping applied!" : `${promo.label} applied!`)
+      } else {
+        setAppliedPromo(null)
+        sessionStorage.removeItem("appliedPromo")
+        setCouponError(payload.message || "Invalid coupon code.")
+      }
+    } catch {
+      setCouponError("Couldn't validate that code right now. Please try again.")
+    } finally {
+      setCouponLoading(false)
     }
   }
 
@@ -500,7 +518,7 @@ export function CartPage() {
             <OrderSummary
               subtotal={subtotal}
               totalQty={totalQty}
-              discountPct={discountPct}
+              discountLabel={appliedPromo?.label ?? ""}
               discountAmount={discountAmount}
               shippingFee={shippingFee}
               total={total}
@@ -513,9 +531,9 @@ export function CartPage() {
                 setCouponSuccess("")
               }}
               onApplyCoupon={handleApplyCoupon}
+              couponLoading={couponLoading}
               couponError={couponError}
               couponSuccess={couponSuccess}
-              appliedPromo={appliedPromo}
             />
           </div>
         </div>

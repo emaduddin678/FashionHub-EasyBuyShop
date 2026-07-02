@@ -58,7 +58,7 @@ export function ReviewSection({ rating, reviewCount }: ReviewSectionProps) {
       {/* Summary */}
       <div className="flex flex-col sm:flex-row gap-8 mb-8 pb-8 border-b border-gray-100">
         <div className="flex flex-col items-center justify-center gap-1 min-w-[120px]">
-          <div className="text-5xl font-extrabold text-[#1A2B5E]">{rating.toFixed(1)}</div>
+          <div className="text-5xl font-extrabold text-brand-charcoal">{rating.toFixed(1)}</div>
           <Stars rating={rating} />
           <div className="text-sm text-gray-400">{reviewCount} reviews</div>
         </div>
@@ -69,7 +69,7 @@ export function ReviewSection({ rating, reviewCount }: ReviewSectionProps) {
               <span className="text-xs text-gray-500 w-5 text-right">{stars}★</span>
               <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#1A2B5E] rounded-full"
+                  className="h-full bg-brand-charcoal rounded-full"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -109,7 +109,7 @@ export function ReviewSection({ rating, reviewCount }: ReviewSectionProps) {
         ))}
       </div>
 
-      <button className="px-6 py-2.5 border-2 border-[#1A2B5E] text-[#1A2B5E] rounded-xl font-semibold text-sm hover:bg-[#1A2B5E] hover:text-white transition-colors">
+      <button className="px-6 py-2.5 border-2 border-brand-charcoal text-brand-charcoal rounded-xl font-semibold text-sm hover:bg-brand-charcoal hover:text-white transition-colors">
         Write a Review
       </button>
     </div>

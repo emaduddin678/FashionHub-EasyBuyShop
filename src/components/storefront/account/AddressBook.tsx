@@ -114,10 +114,10 @@ export default function AddressBook() {
     <div>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="font-bold text-xl text-[#1A2B5E]">Address Book</h2>
+        <h2 className="font-bold text-xl text-brand-charcoal">Address Book</h2>
         <button
           onClick={openAddForm}
-          className="text-sm border border-[#1A2B5E] text-[#1A2B5E] px-4 py-2 rounded-lg hover:bg-[#1A2B5E] hover:text-white transition-colors"
+          className="text-sm border border-brand-charcoal text-brand-charcoal px-4 py-2 rounded-lg hover:bg-brand-charcoal hover:text-white transition-colors"
         >
           + Add New Address
         </button>
@@ -129,12 +129,12 @@ export default function AddressBook() {
           <div
             key={addr.id}
             className={`bg-white rounded-xl p-5 ${
-              addr.isDefault ? "border-2 border-[#1A2B5E]" : "border border-gray-200"
+              addr.isDefault ? "border-2 border-brand-charcoal" : "border border-gray-200"
             }`}
           >
             {/* Top row */}
             <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-1 bg-[#1A2B5E] text-white text-xs font-medium px-2.5 py-1 rounded-full">
+              <span className="inline-flex items-center gap-1 bg-brand-charcoal text-white text-xs font-medium px-2.5 py-1 rounded-full">
                 {LABEL_ICONS[addr.label] ?? "📍"} {addr.label}
               </span>
               {addr.isDefault && (
@@ -146,7 +146,7 @@ export default function AddressBook() {
 
             {/* Details */}
             <div className="mt-3">
-              <p className="font-medium text-[#1A2B5E]">{addr.name}</p>
+              <p className="font-medium text-brand-charcoal">{addr.name}</p>
               <p className="text-sm text-gray-600 mt-1">{addr.phone}</p>
               <p className="text-sm text-gray-600 mt-1">{addr.street}</p>
               <p className="text-sm text-gray-600">{addr.area}</p>
@@ -176,7 +176,7 @@ export default function AddressBook() {
               <div className="mt-4 pt-3 border-t border-gray-100 flex items-center gap-4">
                 <button
                   onClick={() => openEditForm(addr)}
-                  className="text-sm text-[#1A2B5E] hover:underline"
+                  className="text-sm text-brand-charcoal hover:underline"
                 >
                   ✏️ Edit
                 </button>
@@ -203,7 +203,7 @@ export default function AddressBook() {
       {/* Add/Edit form */}
       {showForm && (
         <div className="mt-6 bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="font-semibold text-[#1A2B5E] mb-4">
+          <h3 className="font-semibold text-brand-charcoal mb-4">
             {editingId ? "Edit Address" : "Add New Address"}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -212,7 +212,7 @@ export default function AddressBook() {
               <select
                 value={form.label}
                 onChange={(e) => setForm({ ...form, label: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
               >
                 {["Home", "Office", "Other"].map((l) => (
                   <option key={l}>{l}</option>
@@ -225,7 +225,7 @@ export default function AddressBook() {
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
               />
             </div>
             <div>
@@ -234,7 +234,7 @@ export default function AddressBook() {
                 type="tel"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
               />
             </div>
             <div>
@@ -243,7 +243,7 @@ export default function AddressBook() {
                 type="text"
                 value={form.street}
                 onChange={(e) => setForm({ ...form, street: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
               />
             </div>
             <div>
@@ -252,7 +252,7 @@ export default function AddressBook() {
                 type="text"
                 value={form.area}
                 onChange={(e) => setForm({ ...form, area: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
               />
             </div>
             <div>
@@ -260,7 +260,7 @@ export default function AddressBook() {
               <select
                 value={form.city}
                 onChange={(e) => setForm({ ...form, city: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
               >
                 {CITIES.map((c) => (
                   <option key={c}>{c}</option>
@@ -273,7 +273,7 @@ export default function AddressBook() {
                 type="text"
                 value={form.postalCode}
                 onChange={(e) => setForm({ ...form, postalCode: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
               />
             </div>
             <div className="flex items-center gap-2 self-end pb-2.5">
@@ -282,7 +282,7 @@ export default function AddressBook() {
                 id="setDefault"
                 checked={form.isDefault}
                 onChange={(e) => setForm({ ...form, isDefault: e.target.checked })}
-                className="w-4 h-4 accent-[#1A2B5E]"
+                className="w-4 h-4 accent-brand-charcoal"
               />
               <label htmlFor="setDefault" className="text-sm text-gray-700">
                 Set as default address
@@ -292,7 +292,7 @@ export default function AddressBook() {
           <div className="flex gap-3 mt-5">
             <button
               onClick={handleSave}
-              className="bg-[#1A2B5E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d1733] transition-colors"
+              className="bg-brand-charcoal text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d1733] transition-colors"
             >
               Save Address
             </button>

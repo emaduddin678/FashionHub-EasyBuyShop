@@ -10,9 +10,13 @@ export interface ProductColor {
 }
 
 export interface Product {
+  /** Real MongoDB _id — present for backend-sourced products, absent for local mock data. */
+  _id?: string
   id: number
   name: string
-  brand: Brand
+  // Widened from the `Brand` union to `string` so real backend brand values
+  // (which aren't limited to the 8 curated demo brands) are type-safe.
+  brand: Brand | string
   category: ProductCategory
   fabric: Fabric
   sizes: ClothingSize[]

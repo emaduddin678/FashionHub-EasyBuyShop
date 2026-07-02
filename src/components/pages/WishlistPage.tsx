@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { Heart, X, ShoppingBag } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
-import { removeFromWishlist, clearWishlist, type WishlistItem } from "@/lib/store/wishlistSlice"
+import { removeWishlistItem, clearWishlist, type WishlistItem } from "@/lib/store/wishlistSlice"
 import { addToCart } from "@/lib/store/cartSlice"
 import type { ClothingSize } from "@/lib/data/products"
 
@@ -551,7 +551,7 @@ export function WishlistPage() {
               <WishlistCard
                 key={item.id}
                 item={item}
-                onRemove={() => dispatch(removeFromWishlist({ id: item.id }))}
+                onRemove={() => dispatch(removeWishlistItem(item.id))}
                 onAddToCart={(size) => handleAddToCart(item, size)}
               />
             ))}

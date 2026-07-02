@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation"
 import { Check, Lock, ShieldCheck, ChevronDown } from "lucide-react"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { clearCart, type CartItem } from "@/lib/store/cartSlice"
+import { createOrder, type OrderItemPayload, type CreateOrderPayload } from "@/lib/api/orders"
+import type { PromoResult } from "@/lib/api/discounts"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -61,14 +63,6 @@ const PAYMENT_OPTIONS: { id: PaymentMethod; label: string; sub: string }[] = [
   { id: "cod",   label: "Cash on Delivery",   sub: "Pay when your order arrives (+৳20 handling fee)" },
 ]
 
-type PromoResult = { type: "percent"; value: number } | { type: "freeship" }
-
-const PROMO_CODES: Record<string, PromoResult> = {
-  EID20:     { type: "percent", value: 20 },
-  WELCOME10: { type: "percent", value: 10 },
-  FREESHIP:  { type: "freeship" },
-}
-
 const BD_PHONE_RE = /^(\+880|880|0)1[3-9]\d{8}$/
 const CARD_NUM_RE = /^\d{4} \d{4} \d{4} \d{4}$/
 const EXPIRY_RE   = /^(0[1-9]|1[0-2])\/\d{2}$/
@@ -81,6 +75,12 @@ function parsePrice(p: string) {
 
 function taka(n: number) {
   return `৳${n.toLocaleString()}`
+}
+
+// Only real backend products (Mongo ObjectIds) can be referenced on an order —
+// mock/demo products used in a few "you may also like" rails have no backend record.
+function isServerProductId(id: string | number) {
+  return /^[0-9a-fA-F]{24}$/.test(String(id))
 }
 
 function isExpiryValid(val: string): boolean {
@@ -989,6 +989,7 @@ function Step3Review({
   onEdit,
   onPlaceOrder,
   loading,
+  error,
 }: {
   delivery: DeliveryForm
   payment: PaymentForm
@@ -1001,6 +1002,7 @@ function Step3Review({
   onEdit: (step: Step) => void
   onPlaceOrder: () => void
   loading: boolean
+  error: string
 }) {
   const speedLabel = DELIVERY_OPTIONS.find((o) => o.id === delivery.speed)?.label ?? delivery.speed
   const methodLabel = PAYMENT_OPTIONS.find((o) => o.id === payment.method)?.label ?? payment.method
@@ -1148,6 +1150,16 @@ function Step3Review({
         </div>
       </Card>
 
+      {/* Order error */}
+      {error && (
+        <div
+          className="rounded-xl px-4 py-3 font-sans text-sm"
+          style={{ background: "rgba(198,147,132,0.1)", border: "1px solid rgba(198,147,132,0.3)", color: "var(--color-brand-rose)" }}
+        >
+          {error}
+        </div>
+      )}
+
       {/* Place Order CTA */}
       <button
         type="button"
@@ -1231,13 +1243,13 @@ export function CheckoutPage() {
 
   const [errors, setErrors] = useState<FormErrors>({})
   const [loading, setLoading] = useState(false)
+  const [orderError, setOrderError] = useState("")
 
   // ── Derived pricing ────────────────────────────────────────────────
   const subtotal = cartItems.reduce((s, i) => s + parsePrice(i.price) * i.quantity, 0)
-  const discountPct = appliedPromo?.type === "percent" ? appliedPromo.value : 0
-  const discount = Math.round((subtotal * discountPct) / 100)
-  const afterDiscount = subtotal - discount
-  const freeShip = appliedPromo?.type === "freeship"
+  const discount = appliedPromo?.discountAmount ?? 0
+  const afterDiscount = Math.max(subtotal - discount, 0)
+  const freeShip = appliedPromo?.freeShipping ?? false
   const isCod = payment.method === "cod"
 
   const speedFee = DELIVERY_OPTIONS.find((o) => o.id === delivery.speed)?.fee ?? 100
@@ -1300,33 +1312,79 @@ export function CheckoutPage() {
 
   const handlePlaceOrder = useCallback(async () => {
     setLoading(true)
-    await new Promise((r) => setTimeout(r, 2000))
+    setOrderError("")
 
-    const orderData = {
-      orderId: `FH-${Date.now()}`,
-      items: cartItems,
-      customer: { fullName: delivery.fullName, phone: delivery.phone, email: delivery.email },
-      delivery: {
-        address: delivery.address, upazila: delivery.upazila,
-        district: delivery.district, division: delivery.division,
-        postalCode: delivery.postalCode, speed: delivery.speed,
-        instructions: delivery.instructions, charge: shipping,
-      },
-      payment: {
-        method: payment.method,
-        mobileNumber: payment.method === "bkash" || payment.method === "nagad"
-          ? payment.mobileNumber : null,
-      },
-      pricing: { subtotal, discount, deliveryCharge: shipping, codFee: isCod ? 20 : 0, total },
-      placedAt: new Date().toISOString(),
+    try {
+      const orderItems: OrderItemPayload[] = cartItems.map((item) => {
+        const unit = parsePrice(item.price)
+        return {
+          productId: isServerProductId(item.id) ? String(item.id) : undefined,
+          productName: item.name,
+          variant: { color: item.selectedColor?.name, size: item.size },
+          quantity: item.quantity,
+          unitPrice: unit,
+          totalPrice: unit * item.quantity,
+        }
+      })
+
+      const paymentMethod: CreateOrderPayload["payment"]["method"] =
+        payment.method === "cod" ? "cash_on_delivery" : (payment.method as "bkash" | "nagad" | "card")
+
+      const result = await createOrder({
+        customer: {
+          name: delivery.fullName,
+          email: delivery.email || undefined,
+          phone: delivery.phone,
+          shippingAddress: {
+            street: [delivery.address, delivery.upazila].filter(Boolean).join(", "),
+            city: delivery.district,
+            state: delivery.division,
+            zip: delivery.postalCode || undefined,
+            country: "Bangladesh",
+          },
+        },
+        items: orderItems,
+        pricing: {
+          subtotal,
+          discountAmount: discount,
+          couponCode: appliedPromo?.code,
+          shippingCost: shipping,
+          total,
+        },
+        payment: { method: paymentMethod },
+        source: "website",
+      })
+
+      const orderData = {
+        orderId: result.payload.orderId,
+        items: cartItems,
+        customer: { fullName: delivery.fullName, phone: delivery.phone, email: delivery.email },
+        delivery: {
+          address: delivery.address, upazila: delivery.upazila,
+          district: delivery.district, division: delivery.division,
+          postalCode: delivery.postalCode, speed: delivery.speed,
+          instructions: delivery.instructions, charge: shipping,
+        },
+        payment: {
+          method: payment.method,
+          mobileNumber: payment.method === "bkash" || payment.method === "nagad"
+            ? payment.mobileNumber : null,
+        },
+        pricing: { subtotal, discount, deliveryCharge: shipping, codFee: isCod ? 20 : 0, total },
+        placedAt: new Date().toISOString(),
+      }
+
+      sessionStorage.setItem("lastOrder", JSON.stringify(orderData))
+      sessionStorage.removeItem("appliedPromo")
+      redirectedRef.current = true // suppress the empty-cart guard before clearing the cart
+      dispatch(clearCart())
+      router.push("/order-confirm")
+    } catch (err) {
+      setOrderError((err as Error).message || "Failed to place your order. Please try again.")
+    } finally {
+      setLoading(false)
     }
-
-    sessionStorage.setItem("lastOrder", JSON.stringify(orderData))
-    sessionStorage.removeItem("appliedPromo")
-    redirectedRef.current = true // suppress the empty-cart guard before clearing the cart
-    dispatch(clearCart())
-    router.push("/order-confirm")
-  }, [cartItems, delivery, payment, subtotal, discount, shipping, isCod, total, dispatch, router])
+  }, [cartItems, delivery, payment, subtotal, discount, shipping, isCod, total, appliedPromo, dispatch, router])
 
   if (cartItems.length === 0) return null
 
@@ -1401,6 +1459,7 @@ export function CheckoutPage() {
                 onEdit={(s) => { setStep(s); window.scrollTo({ top: 0, behavior: "smooth" }) }}
                 onPlaceOrder={handlePlaceOrder}
                 loading={loading}
+                error={orderError}
               />
             )}
           </div>

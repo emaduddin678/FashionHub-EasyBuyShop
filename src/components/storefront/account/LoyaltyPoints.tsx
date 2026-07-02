@@ -55,8 +55,8 @@ export default function LoyaltyPoints() {
   return (
     <div>
       {/* Hero card */}
-      <div className="bg-[#1A2B5E] rounded-xl p-8 text-center">
-        <Gift size={48} className="text-[#D4A017] mx-auto" />
+      <div className="bg-brand-charcoal rounded-xl p-8 text-center">
+        <Gift size={48} className="text-brand-gold mx-auto" />
         <p className="text-4xl font-bold text-white mt-3">
           {POINTS.toLocaleString()} Points
         </p>
@@ -73,7 +73,7 @@ export default function LoyaltyPoints() {
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${
                       isActive
-                        ? "bg-[#D4A017] border-[#D4A017] text-[#1A2B5E]"
+                        ? "bg-brand-gold border-brand-gold text-brand-charcoal"
                         : isDone
                         ? "bg-white/20 border-white/40 text-white"
                         : "bg-white/10 border-white/20 text-white/40"
@@ -83,7 +83,7 @@ export default function LoyaltyPoints() {
                   </div>
                   <span
                     className={`text-xs font-medium ${
-                      isActive ? "text-[#D4A017]" : isDone ? "text-white/70" : "text-white/40"
+                      isActive ? "text-brand-gold" : isDone ? "text-white/70" : "text-white/40"
                     }`}
                   >
                     {tier.name}
@@ -98,7 +98,7 @@ export default function LoyaltyPoints() {
               className="h-0.5 transition-all"
               style={{
                 width: `${((currentTierIdx + progressPct / 100) / (TIERS.length - 1)) * 100}%`,
-                backgroundColor: "#D4A017",
+                backgroundColor: "var(--color-brand-gold)",
               }}
             />
           </div>
@@ -113,7 +113,7 @@ export default function LoyaltyPoints() {
 
       {/* How to earn */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mt-6">
-        <h3 className="font-semibold text-[#1A2B5E] mb-4">How to Earn Points</h3>
+        <h3 className="font-semibold text-brand-charcoal mb-4">How to Earn Points</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -126,7 +126,7 @@ export default function LoyaltyPoints() {
               {HOW_TO_EARN.map((row, idx) => (
                 <tr key={idx} className="border-b border-gray-50 last:border-0">
                   <td className="py-2.5 text-gray-700">{row.action}</td>
-                  <td className="py-2.5 text-right font-semibold text-[#1A2B5E]">{row.points}</td>
+                  <td className="py-2.5 text-right font-semibold text-brand-charcoal">{row.points}</td>
                 </tr>
               ))}
             </tbody>
@@ -136,7 +136,7 @@ export default function LoyaltyPoints() {
 
       {/* Points history */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mt-6">
-        <h3 className="font-semibold text-[#1A2B5E] mb-4">Points History</h3>
+        <h3 className="font-semibold text-brand-charcoal mb-4">Points History</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -165,7 +165,7 @@ export default function LoyaltyPoints() {
 
       {/* Redeem points */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mt-6">
-        <h3 className="font-semibold text-[#1A2B5E] mb-1">Redeem Points</h3>
+        <h3 className="font-semibold text-brand-charcoal mb-1">Redeem Points</h3>
         <p className="text-sm text-gray-500 mb-4">Use your points as discount on next order</p>
         <div className="flex gap-3 items-start flex-wrap">
           <div className="flex-1 min-w-[160px]">
@@ -179,15 +179,15 @@ export default function LoyaltyPoints() {
                 setRedeemInput(v.toString())
               }}
               placeholder="Enter points to redeem"
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
             />
             {redeemInput && (
-              <p className="text-sm text-[#1A2B5E] font-medium mt-1.5">
+              <p className="text-sm text-brand-charcoal font-medium mt-1.5">
                 = ৳{redeemValue} discount
               </p>
             )}
           </div>
-          <button className="bg-[#D4A017] text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#b8881a] transition-colors whitespace-nowrap">
+          <button className="bg-brand-gold text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#b8881a] transition-colors whitespace-nowrap">
             Redeem at Checkout →
           </button>
         </div>

@@ -1,3 +1,5 @@
+// TODO(phase-5.1): still mock data — there is no blog model/endpoint on the
+// backend yet. Do not wire this to the API until one exists.
 export type BlogCategory = "Style Tips" | "Seasonal Edits" | "Brand Stories" | "Care Guides"
 
 export interface BlogPost {

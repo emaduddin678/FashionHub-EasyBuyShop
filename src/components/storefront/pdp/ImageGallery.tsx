@@ -11,8 +11,13 @@ const BADGE_STYLES: Record<string, { bg: string; label: string }> = {
   featured: { bg: "var(--color-brand-mauve)",    label: "Featured" },
 }
 
-// Placeholder images using the same placehold.co pattern as before
+// Real backend products carry actual Cloudinary photos in `product.images`.
+// Only fall back to generated placeholder tiles when a product has none
+// (mock/demo products, or a real product with no photos uploaded yet).
 function getSlides(product: Product): string[] {
+  const real = product.images.filter((src) => src && !src.includes("/images/products/placeholder"))
+  if (real.length > 0) return real
+
   const base = encodeURIComponent(product.name)
   const brand = encodeURIComponent(product.brand)
   return [

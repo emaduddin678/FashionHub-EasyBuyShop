@@ -1,12 +1,16 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { X } from "lucide-react"
 import { AuthLayout } from "@/components/storefront/auth/AuthLayout"
 import { PasswordInput } from "@/components/storefront/auth/PasswordInput"
 import { SocialLogin } from "@/components/storefront/auth/SocialLogin"
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
+import { loginUser } from "@/lib/store/authSlice"
+import authApi from "@/lib/api/auth"
+import { useRedirectIfAuthenticated } from "@/lib/hooks/useRedirectIfAuthenticated"
 
 // ── Shared input style ─────────────────────────────────────────────────────────
 
@@ -67,25 +71,27 @@ function Toast({ message, type, onDismiss }: { message: string; type: "success" 
   )
 }
 
-// ── Forgot Password flow ───────────────────────────────────────────────────────
+// ── Forgot Password panel — real email-link flow (backend has no OTP concept) ──
 
-type ForgotStep = "idle" | "email" | "otp" | "newpass"
+type ForgotStep = "email" | "sent"
 
-function ForgotPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const [step, setStep]       = useState<ForgotStep>("email")
-  const [ident, setIdent]     = useState("")
-  const [otp, setOtp]         = useState(["", "", "", "", "", ""])
-  const [newPass, setNewPass] = useState("")
-  const [confPass, setConf]   = useState("")
-  const otpRefs               = useRef<(HTMLInputElement | null)[]>([])
+function ForgotPanel({ onClose }: { onClose: () => void }) {
+  const [step, setStep] = useState<ForgotStep>("email")
+  const [ident, setIdent] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
 
-  function handleOtpChange(i: number, v: string) {
-    if (!/^\d?$/.test(v)) return
-    const next = [...otp]; next[i] = v; setOtp(next)
-    if (v && i < 5) otpRefs.current[i + 1]?.focus()
-  }
-  function handleOtpKey(i: number, e: React.KeyboardEvent) {
-    if (e.key === "Backspace" && !otp[i] && i > 0) otpRefs.current[i - 1]?.focus()
+  async function handleSend() {
+    setError("")
+    setLoading(true)
+    try {
+      await authApi.forgetPassword(ident.trim())
+      setStep("sent")
+    } catch (err) {
+      setError((err as Error).message || "Failed to send reset email")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -97,108 +103,50 @@ function ForgotPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         <>
           <p className="font-sans font-semibold text-sm" style={{ color: "var(--color-brand-charcoal)" }}>Reset Password</p>
           <p className="font-sans mt-1 mb-4" style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
-            Enter your phone or email — we&apos;ll send a reset code.
+            Enter your email — we&apos;ll send a link to reset your password.
           </p>
           <input
-            type="text"
+            type="email"
             value={ident}
             onChange={(e) => setIdent(e.target.value)}
-            placeholder="Phone or email"
+            placeholder="email@example.com"
             style={inputStyle}
           />
+          {error && (
+            <p className="font-sans mt-2" style={{ fontSize: "12px", color: "var(--color-brand-rose)" }}>{error}</p>
+          )}
           <button
             type="button"
-            onClick={() => { if (ident.trim()) setStep("otp") }}
-            disabled={!ident.trim()}
+            onClick={handleSend}
+            disabled={!ident.trim() || loading}
             className="w-full mt-3 font-sans font-semibold text-sm rounded-full"
             style={{
               height: "42px",
               background: "var(--color-brand-rose)",
               color: "var(--color-brand-ivory)",
               border: "none",
-              cursor: ident.trim() ? "pointer" : "not-allowed",
-              opacity: ident.trim() ? 1 : 0.5,
+              cursor: ident.trim() && !loading ? "pointer" : "not-allowed",
+              opacity: ident.trim() && !loading ? 1 : 0.5,
             }}
           >
-            Send Reset Code →
+            {loading ? "Sending…" : "Send Reset Link →"}
           </button>
         </>
       )}
 
-      {step === "otp" && (
+      {step === "sent" && (
         <>
-          <p className="font-sans text-sm mb-3" style={{ color: "var(--color-brand-charcoal)", opacity: 0.7 }}>
-            Enter the 6-digit code sent to your phone.
+          <p className="font-sans font-semibold text-sm" style={{ color: "var(--color-brand-charcoal)" }}>Check Your Email</p>
+          <p className="font-sans mt-1" style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+            We&apos;ve sent a password reset link to <span style={{ fontWeight: 600 }}>{ident}</span>. The link expires in 10 minutes.
           </p>
-          <div className="flex gap-2 justify-center">
-            {otp.map((d, i) => (
-              <input
-                key={i}
-                ref={(el) => { otpRefs.current[i] = el }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={d}
-                onChange={(e) => handleOtpChange(i, e.target.value)}
-                onKeyDown={(e) => handleOtpKey(i, e)}
-                style={{
-                  width: "40px", height: "44px",
-                  border: "1.5px solid var(--color-border)",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                  fontSize: "18px",
-                  fontWeight: 700,
-                  fontFamily: "var(--font-sans, sans-serif)",
-                  background: "var(--color-brand-ivory)",
-                  color: "var(--color-brand-charcoal)",
-                  outline: "none",
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-brand-rose)" }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)" }}
-              />
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setStep("newpass")}
-            className="w-full mt-4 font-sans font-semibold text-sm rounded-full"
-            style={{ height: "42px", background: "var(--color-brand-rose)", color: "var(--color-brand-ivory)", border: "none", cursor: "pointer" }}
-          >
-            Verify Code →
-          </button>
-        </>
-      )}
-
-      {step === "newpass" && (
-        <>
-          <p className="font-sans font-semibold text-sm mb-4" style={{ color: "var(--color-brand-charcoal)" }}>Set New Password</p>
-          <div className="space-y-3">
-            <PasswordInput value={newPass} onChange={(e) => setNewPass(e.target.value)} label="New Password" autoComplete="new-password" />
-            <PasswordInput value={confPass} onChange={(e) => setConf(e.target.value)} label="Confirm Password" autoComplete="new-password" />
-          </div>
-          <button
-            type="button"
-            onClick={() => { onSuccess(); onClose() }}
-            disabled={!newPass || newPass !== confPass}
-            className="w-full mt-4 font-sans font-semibold text-sm rounded-full"
-            style={{
-              height: "42px",
-              background: "var(--color-brand-rose)",
-              color: "var(--color-brand-ivory)",
-              border: "none",
-              cursor: !newPass || newPass !== confPass ? "not-allowed" : "pointer",
-              opacity: !newPass || newPass !== confPass ? 0.5 : 1,
-            }}
-          >
-            Update Password →
-          </button>
         </>
       )}
 
       <button
         type="button"
         onClick={onClose}
-        className="w-full mt-2 font-sans text-sm"
+        className="w-full mt-3 font-sans text-sm"
         style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-brand-charcoal)", opacity: 0.5 }}
       >
         ← Back to Sign In
@@ -211,13 +159,19 @@ function ForgotPanel({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const dispatch = useAppDispatch()
+  const authStatus = useAppSelector((s) => s.auth.status)
+  const { checking } = useRedirectIfAuthenticated()
+
   const [identifier, setIdentifier] = useState("")
-  const [password,   setPassword]   = useState("")
-  const [loading,    setLoading]    = useState(false)
-  const [error,      setError]      = useState("")
-  const [shake,      setShake]      = useState(false)
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [shake, setShake] = useState(false)
   const [showForgot, setShowForgot] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
+
+  const loading = authStatus === "loading"
 
   const showToast = useCallback((message: string, type: "success" | "error" = "success") => {
     setToast({ message, type })
@@ -226,19 +180,29 @@ export default function LoginPage() {
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError("")
-    setLoading(true)
-    await new Promise((r) => setTimeout(r, 800))
 
-    const valid = identifier.trim() && password.trim()
-    if (valid) {
-      showToast("Welcome back! Signing you in…", "success")
-      setTimeout(() => router.push("/account"), 1200)
+    const result = await dispatch(loginUser({ email: identifier, password }))
+
+    if (loginUser.fulfilled.match(result)) {
+      const user = result.payload
+      showToast(`Welcome back, ${user.firstName}!`, "success")
+      setTimeout(() => router.push(searchParams.get("returnUrl") || "/account"), 900)
     } else {
-      setError("Please check your phone/email and password.")
+      const msg = (result.payload as string) || "Invalid email or password. Please try again."
+      setError(msg)
       setShake(true)
       setTimeout(() => setShake(false), 500)
     }
-    setLoading(false)
+  }
+
+  if (checking) {
+    return (
+      <AuthLayout mode="login">
+        <div className="flex items-center justify-center py-24">
+          <p className="font-sans text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.5 }}>Loading…</p>
+        </div>
+      </AuthLayout>
+    )
   }
 
   return (
@@ -273,13 +237,14 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} className="space-y-5">
           {/* Identifier */}
           <div>
-            <FieldLabel required>Phone Number or Email</FieldLabel>
+            <FieldLabel required>Email Address</FieldLabel>
             <input
-              type="text"
+              type="email"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="01XXXXXXXXX or email@example.com"
+              placeholder="email@example.com"
               autoComplete="username"
+              required
               style={inputStyle}
               onFocus={(e) => { e.currentTarget.style.borderColor = "var(--color-brand-charcoal)" }}
               onBlur={(e) => { e.currentTarget.style.borderColor = "var(--color-border)" }}
@@ -337,8 +302,6 @@ export default function LoginPage() {
               border: "none",
               cursor: loading ? "not-allowed" : "pointer",
             }}
-            onMouseEnter={(e) => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "var(--color-brand-mauve)" }}
-            onMouseLeave={(e) => { if (!loading) (e.currentTarget as HTMLButtonElement).style.background = "var(--color-brand-rose)" }}
           >
             {loading ? (
               <>
@@ -355,12 +318,7 @@ export default function LoginPage() {
         </form>
 
         {/* Forgot password panel */}
-        {showForgot && (
-          <ForgotPanel
-            onClose={() => setShowForgot(false)}
-            onSuccess={() => showToast("Password updated. Please sign in again.", "success")}
-          />
-        )}
+        {showForgot && <ForgotPanel onClose={() => setShowForgot(false)} />}
 
         {/* Divider */}
         <div className="flex items-center gap-3 my-6">

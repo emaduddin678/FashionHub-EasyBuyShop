@@ -35,7 +35,7 @@ export function TrackingFAQ() {
   return (
     <section className="bg-[#F8F9FA] py-12 px-4">
       <div className="max-w-3xl mx-auto">
-        <h2 className="font-bold text-xl text-[#1A2B5E] text-center mb-8">
+        <h2 className="font-bold text-xl text-brand-charcoal text-center mb-8">
           Frequently Asked Questions
         </h2>
 
@@ -51,8 +51,8 @@ export function TrackingFAQ() {
                   onClick={() => setOpen(isOpen ? null : i)}
                   className="w-full flex items-center justify-between text-left px-5 py-4 gap-4"
                 >
-                  <span className="font-medium text-sm text-[#1A2B5E]">{faq.q}</span>
-                  <span className="text-[#D4A017] font-bold text-lg flex-shrink-0 leading-none">
+                  <span className="font-medium text-sm text-brand-charcoal">{faq.q}</span>
+                  <span className="text-brand-gold font-bold text-lg flex-shrink-0 leading-none">
                     {isOpen ? "−" : "+"}
                   </span>
                 </button>

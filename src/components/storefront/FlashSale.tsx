@@ -6,7 +6,7 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
 import { addToCart } from "@/lib/store/cartSlice"
-import { toggleWishlist } from "@/lib/store/wishlistSlice"
+import { toggleWishlistItem } from "@/lib/store/wishlistSlice"
 import { Heart } from "lucide-react"
 import type { ClothingSize, Product } from "@/lib/data/products"
 
@@ -65,13 +65,15 @@ function SaleCard({ product }: { product: Product }) {
   const [selectedSize, setSelectedSize] = useState<ClothingSize | null>(null)
   const [added, setAdded] = useState(false)
 
+  const productKey = product._id ?? product.id
+
   const isWishlisted = useAppSelector((s) =>
-    s.wishlist.items.some((i) => i.id === product.id),
+    s.wishlist.items.some((i) => String(i.id) === String(productKey)),
   )
 
   const firstWord = encodeURIComponent(product.name.split(" ")[0] || "Item")
   const imgUrl = `https://placehold.co/480x640/1E1E1E/E8A4B0?text=${firstWord}`
-  const productHref = `/product/${product.id}`
+  const productHref = `/product/${productKey}`
 
   const savings =
     product.originalPrice && product.originalPrice > product.price
@@ -85,7 +87,7 @@ function SaleCard({ product }: { product: Product }) {
   const handleAddToCart = (sz: ClothingSize) => {
     dispatch(
       addToCart({
-        id: product.id,
+        id: productKey,
         name: product.name,
         price: `৳${product.price.toLocaleString()}`,
         size: sz,
@@ -101,8 +103,8 @@ function SaleCard({ product }: { product: Product }) {
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
-    dispatch(toggleWishlist({
-      id: product.id, name: product.name, brand: product.brand,
+    dispatch(toggleWishlistItem({
+      id: productKey, name: product.name, brand: product.brand,
       category: product.category, price: product.price,
       originalPrice: product.originalPrice ?? product.price,
       image: imgUrl, sizes: product.sizes, unavailableSizes: [],

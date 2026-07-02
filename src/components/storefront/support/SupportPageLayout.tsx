@@ -14,12 +14,12 @@ interface SupportPageLayoutProps {
 
 export function SupportPageLayout({ title, description, children }: SupportPageLayoutProps) {
   return (
-    <div className="min-h-screen font-sans bg-[#f4f5f9]">
+    <div className="min-h-screen font-sans bg-brand-ivory">
       <AnnouncementBar />
       <Header />
 
       {/* Hero band */}
-      <div className="bg-[#1A2B5E] py-10 text-center">
+      <div className="bg-brand-charcoal py-10 text-center">
         {/* Breadcrumb */}
         <nav className="flex items-center justify-center gap-1.5 text-white/60 text-xs mb-4">
           <Link href="/" className="flex items-center gap-1 hover:text-white transition-colors">

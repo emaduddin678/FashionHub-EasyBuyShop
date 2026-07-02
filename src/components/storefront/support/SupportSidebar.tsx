@@ -17,7 +17,7 @@ export function SupportSidebar() {
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 sticky top-24">
-      <h3 className="font-semibold text-[#1A2B5E] mb-4 text-sm">Customer Support</h3>
+      <h3 className="font-semibold text-brand-charcoal mb-4 text-sm">Customer Support</h3>
 
       <nav className="flex flex-col gap-1">
         {navLinks.map(({ href, icon: Icon, label }) => {
@@ -28,25 +28,25 @@ export function SupportSidebar() {
               href={href}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? "bg-[#1A2B5E] text-white"
+                  ? "bg-brand-charcoal text-white"
                   : "text-gray-600 hover:bg-gray-50"
               }`}
             >
-              <Icon size={16} className={isActive ? "text-white" : "text-[#1A2B5E]"} />
+              <Icon size={16} className={isActive ? "text-white" : "text-brand-charcoal"} />
               {label}
             </Link>
           )
         })}
       </nav>
 
-      <div className="mt-6 bg-[#1A2B5E] rounded-xl p-4">
+      <div className="mt-6 bg-brand-charcoal rounded-xl p-4">
         <p className="text-white font-medium text-sm">Still need help?</p>
         <p className="text-white/70 text-xs mt-1">Chat with our team on WhatsApp</p>
         <a
           href="https://wa.me/8801712345678"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 w-full flex items-center justify-center gap-2 bg-[#D4A017] text-[#1A2B5E] text-sm font-semibold py-2 px-4 rounded-lg hover:bg-[#b8881a] transition-colors"
+          className="mt-3 w-full flex items-center justify-center gap-2 bg-brand-gold text-brand-charcoal text-sm font-semibold py-2 px-4 rounded-lg hover:bg-[#b8881a] transition-colors"
         >
           <MessageCircle size={15} />
           Chat Now

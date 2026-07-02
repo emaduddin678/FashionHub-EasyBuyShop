@@ -48,6 +48,7 @@
 --color-brand-charcoal: #1C1C1C; /* near-black — headings, text */
 --color-brand-beige:    #FFF8F0; /* warm cream — section backgrounds */
 --color-brand-ivory:    #FFFDF9; /* pure cream — page background */
+--color-brand-gold:     #D4A017; /* warm gold — same value as badge-featured, hero accent */
 
 /* Badges */
 --color-badge-new:      #2E7D32; /* forest green */

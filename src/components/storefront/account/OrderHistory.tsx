@@ -100,7 +100,7 @@ export default function OrderHistory() {
     <div>
       {/* Header row */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h2 className="font-bold text-xl text-[#1A2B5E]">My Orders</h2>
+        <h2 className="font-bold text-xl text-brand-charcoal">My Orders</h2>
         <div className="flex gap-1 border-b border-gray-200">
           {filterTabs.map((tab) => (
             <button
@@ -108,8 +108,8 @@ export default function OrderHistory() {
               onClick={() => setFilter(tab.id)}
               className={`text-sm px-3 pb-2 border-b-2 transition-colors -mb-px ${
                 filter === tab.id
-                  ? "text-[#1A2B5E] border-[#1A2B5E] font-semibold"
-                  : "text-gray-500 border-transparent hover:text-[#1A2B5E]"
+                  ? "text-brand-charcoal border-brand-charcoal font-semibold"
+                  : "text-gray-500 border-transparent hover:text-brand-charcoal"
               }`}
             >
               {tab.label}
@@ -126,7 +126,7 @@ export default function OrderHistory() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by Order ID or product name"
-          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+          className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
         />
       </div>
 
@@ -138,7 +138,7 @@ export default function OrderHistory() {
             <p className="text-gray-500 font-medium">No orders found</p>
             <Link
               href="/products"
-              className="inline-block mt-3 text-sm bg-[#1A2B5E] text-white px-5 py-2 rounded-lg hover:bg-[#0d1733] transition-colors"
+              className="inline-block mt-3 text-sm bg-brand-charcoal text-white px-5 py-2 rounded-lg hover:bg-[#0d1733] transition-colors"
             >
               Start Shopping →
             </Link>
@@ -155,7 +155,7 @@ export default function OrderHistory() {
                 {/* Top row */}
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div>
-                    <p className="font-medium text-[#1A2B5E]">{order.id}</p>
+                    <p className="font-medium text-brand-charcoal">{order.id}</p>
                     <p className="text-xs text-gray-400 mt-0.5">{formatDate(order.date)}</p>
                   </div>
                   <div className="flex items-center gap-3">
@@ -165,7 +165,7 @@ export default function OrderHistory() {
                     {!isCancelled && (
                       <Link
                         href={`/track?orderId=${order.id}`}
-                        className="text-sm text-[#D4A017] font-medium hover:underline"
+                        className="text-sm text-brand-gold font-medium hover:underline"
                       >
                         Track Order →
                       </Link>
@@ -183,7 +183,7 @@ export default function OrderHistory() {
                         className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#1A2B5E] truncate">{product.name}</p>
+                        <p className="text-sm font-medium text-brand-charcoal truncate">{product.name}</p>
                         <p className="text-xs text-gray-500">Size: {product.size}</p>
                       </div>
                     </div>
@@ -194,17 +194,17 @@ export default function OrderHistory() {
                 <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between flex-wrap gap-3">
                   <div>
                     <p className="text-xs text-gray-500">Paid via {order.paymentMethod}</p>
-                    <p className="text-sm font-semibold text-[#1A2B5E] mt-0.5">
+                    <p className="text-sm font-semibold text-brand-charcoal mt-0.5">
                       Total: ৳{order.total.toLocaleString()}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     {isDelivered && (
                       <>
-                        <button className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-[#1A2B5E] hover:text-[#1A2B5E] transition-colors">
+                        <button className="text-sm border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:border-brand-charcoal hover:text-brand-charcoal transition-colors">
                           🔄 Return/Exchange
                         </button>
-                        <button className="text-sm border border-[#D4A017] text-[#D4A017] px-3 py-1.5 rounded-lg hover:bg-[#D4A017]/10 transition-colors">
+                        <button className="text-sm border border-brand-gold text-brand-gold px-3 py-1.5 rounded-lg hover:bg-brand-gold/10 transition-colors">
                           ⭐ Write Review
                         </button>
                       </>
@@ -212,13 +212,13 @@ export default function OrderHistory() {
                     {isActive && (
                       <Link
                         href={`/track?orderId=${order.id}`}
-                        className="text-sm bg-[#1A2B5E] text-white px-4 py-1.5 rounded-lg hover:bg-[#0d1733] transition-colors"
+                        className="text-sm bg-brand-charcoal text-white px-4 py-1.5 rounded-lg hover:bg-[#0d1733] transition-colors"
                       >
                         📍 Track Order
                       </Link>
                     )}
                     {isCancelled && (
-                      <button className="text-sm bg-[#1A2B5E] text-white px-4 py-1.5 rounded-lg hover:bg-[#0d1733] transition-colors">
+                      <button className="text-sm bg-brand-charcoal text-white px-4 py-1.5 rounded-lg hover:bg-[#0d1733] transition-colors">
                         🛒 Reorder
                       </button>
                     )}

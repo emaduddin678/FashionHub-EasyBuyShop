@@ -42,7 +42,7 @@ function PasswordField({
           type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
         />
         <button
           type="button"
@@ -85,7 +85,7 @@ function Toggle({ checked, onChange }: ToggleProps) {
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
-        checked ? "bg-[#1A2B5E]" : "bg-gray-200"
+        checked ? "bg-brand-charcoal" : "bg-gray-200"
       }`}
     >
       <span
@@ -134,11 +134,11 @@ export default function AccountSettings() {
 
   return (
     <div>
-      <h2 className="font-bold text-xl text-[#1A2B5E] mb-6">Account Settings</h2>
+      <h2 className="font-bold text-xl text-brand-charcoal mb-6">Account Settings</h2>
 
       {/* Section A — Personal Information */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 className="font-semibold text-[#1A2B5E] mb-4">Personal Information</h3>
+        <h3 className="font-semibold text-brand-charcoal mb-4">Personal Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
             { label: "First Name", key: "firstName", type: "text" },
@@ -153,7 +153,7 @@ export default function AccountSettings() {
                 type={type}
                 value={profile[key as keyof typeof profile]}
                 onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
               />
             </div>
           ))}
@@ -162,7 +162,7 @@ export default function AccountSettings() {
             <select
               value={profile.gender}
               onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1A2B5E]/20 focus:border-[#1A2B5E]"
+              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
             >
               {["Male", "Female", "Prefer not to say"].map((g) => (
                 <option key={g}>{g}</option>
@@ -177,7 +177,7 @@ export default function AccountSettings() {
         )}
         <button
           onClick={handleProfileSave}
-          className="mt-4 w-full bg-[#1A2B5E] text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d1733] transition-colors"
+          className="mt-4 w-full bg-brand-charcoal text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d1733] transition-colors"
         >
           Save Changes
         </button>
@@ -185,7 +185,7 @@ export default function AccountSettings() {
 
       {/* Section B — Change Password */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 className="font-semibold text-[#1A2B5E] mb-4">Change Password</h3>
+        <h3 className="font-semibold text-brand-charcoal mb-4">Change Password</h3>
         <div className="space-y-4">
           <PasswordField label="Current Password" value={currentPwd} onChange={setCurrentPwd} />
           <PasswordField label="New Password" value={newPwd} onChange={setNewPwd} showStrength />
@@ -201,7 +201,7 @@ export default function AccountSettings() {
         )}
         <button
           onClick={handlePasswordUpdate}
-          className="mt-4 bg-[#1A2B5E] text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d1733] transition-colors"
+          className="mt-4 bg-brand-charcoal text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d1733] transition-colors"
         >
           Update Password
         </button>
@@ -209,7 +209,7 @@ export default function AccountSettings() {
 
       {/* Section C — Notification Preferences */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 className="font-semibold text-[#1A2B5E] mb-4">Notifications</h3>
+        <h3 className="font-semibold text-brand-charcoal mb-4">Notifications</h3>
         <div className="space-y-4">
           {[
             { key: "email", label: "📧 Email notifications", description: "Order updates" },

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Check, Package } from "lucide-react"
+import { trackOrder, type TrackOrderResult } from "@/lib/api/orders"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,8 +18,11 @@ interface TrackStep {
 interface TrackedOrder {
   orderId: string
   customerName: string
-  items: { name: string; size: string; quantity: number; price: number; imgBg: string; imgFg: string; imgText: string }[]
-  pricing: { subtotal: number; discount: number; shipping: number; total: number }
+  // The public tracking endpoint returns status/timeline/items only — no
+  // pricing or customer PII — so both are optional and omitted from the UI
+  // when absent (every real, backend-sourced lookup).
+  items: { name: string; size: string; quantity: number; price?: number; imgBg: string; imgFg: string; imgText: string }[]
+  pricing?: { subtotal: number; discount: number; shipping: number; total: number }
   steps: TrackStep[]
 }
 
@@ -34,71 +38,60 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })
 }
 
-function buildMockSteps(placedAt: string): TrackStep[] {
-  const placed = new Date(placedAt)
-  const d = (days: number) => {
-    const r = new Date(placed)
-    r.setDate(r.getDate() + days)
-    return r.toISOString()
+// Backend order.status: pending | confirmed | processing | shipped | delivered | cancelled | refunded
+const STATUS_STEP_INDEX: Record<string, number> = {
+  pending: 0, confirmed: 0, processing: 1, shipped: 2, delivered: 4, cancelled: -1, refunded: -1,
+}
+
+const STEP_DEFS = [
+  { label: "Order Placed",     sub: "Your order has been confirmed" },
+  { label: "Processing",       sub: "Our team is preparing your order" },
+  { label: "Shipped",          sub: "Handed to our delivery partner" },
+  { label: "Out for Delivery", sub: "Arriving soon" },
+  { label: "Delivered",        sub: "Order delivered" },
+]
+
+function buildStepsFromBackend(result: TrackOrderResult): TrackStep[] {
+  const currentIdx = STATUS_STEP_INDEX[result.status] ?? 0
+  const isDelivered = result.status === "delivered"
+
+  const timestampFor: Record<number, string> = {}
+  for (const entry of result.timeline) {
+    const a = entry.action.toLowerCase()
+    if (a.includes("creat") || a.includes("placed")) timestampFor[0] = entry.at
+    else if (a.includes("process") || a.includes("pack")) timestampFor[1] = entry.at
+    else if (a.includes("ship") || a.includes("despatch")) timestampFor[2] = entry.at
+    else if (a.includes("out for delivery")) timestampFor[3] = entry.at
+    else if (a.includes("deliver")) timestampFor[4] = entry.at
   }
+  timestampFor[0] = timestampFor[0] ?? result.createdAt
 
-  return [
-    { label: "Order Placed",            sub: `${fmt(placedAt)} at ${fmtTime(placedAt)}`, date: placedAt,  state: "done" },
-    { label: "Payment Confirmed",       sub: fmt(d(0)),                                  date: d(0),       state: "done" },
-    { label: "Processing at Warehouse", sub: fmt(d(1)),                                  date: d(1),       state: "done" },
-    { label: "Out for Delivery",        sub: "Today, estimated before 8PM",              date: null,       state: "active" },
-    { label: "Delivered",               sub: "Pending",                                  date: null,       state: "pending" },
-  ]
-}
-
-function getMockFromSession(): TrackedOrder | null {
-  try {
-    const raw = sessionStorage.getItem("lastOrder")
-    if (!raw) return null
-    const stored = JSON.parse(raw)
-    const name = stored.customer?.fullName
-      || [stored.customer?.firstName, stored.customer?.lastName].filter(Boolean).join(" ")
-      || "Customer"
+  return STEP_DEFS.map((step, i) => {
+    const done = i < currentIdx || isDelivered
+    const active = i === currentIdx && !isDelivered && result.status !== "cancelled" && result.status !== "refunded"
+    const ts = timestampFor[i]
     return {
-      orderId: stored.orderId,
-      customerName: name,
-      items: (stored.items ?? []).map((it: { name: string; price: string; size: string; quantity: number; imgBg?: string; imgFg?: string; imgText?: string }) => ({
-        name: it.name,
-        size: it.size,
-        quantity: it.quantity,
-        price: parseInt(it.price?.replace(/[৳,\s]/g, "") ?? "0", 10) || 0,
-        imgBg: it.imgBg || "F5EFE6",
-        imgFg: it.imgFg || "2D2D2D",
-        imgText: it.imgText || "",
-      })),
-      pricing: {
-        subtotal:  stored.pricing?.subtotal        ?? 0,
-        discount:  stored.pricing?.discount        ?? 0,
-        shipping:  stored.pricing?.deliveryCharge  ?? 0,
-        total:     stored.pricing?.total           ?? 0,
-      },
-      steps: buildMockSteps(stored.placedAt ?? new Date().toISOString()),
+      label: step.label,
+      sub: ts ? `${fmt(ts)} at ${fmtTime(ts)}` : done ? "Completed" : active ? step.sub : "Pending",
+      date: ts ?? null,
+      state: done ? "done" : active ? "active" : "pending",
     }
-  } catch { return null }
+  })
 }
 
-function getDemoOrder(query: string): TrackedOrder | null {
-  if (!query.trim()) return null
-  const demoIds = ["FH-DEMO", "FH-123456", "01712345678", "01812345678"]
-  const match = demoIds.some(
-    (id) => query.toUpperCase().includes(id.toUpperCase()) || id.toUpperCase().includes(query.toUpperCase()),
-  )
-  if (!match && !query.startsWith("FH-") && !/^0?1[3-9]\d{8}$/.test(query.replace(/\s/g, ""))) return null
-
-  const placedAt = new Date(Date.now() - 2 * 3600 * 1000).toISOString()
+function fromTrackOrderResult(result: TrackOrderResult): TrackedOrder {
   return {
-    orderId: query.startsWith("FH-") ? query : "FH-DEMO01",
-    customerName: "Rahim Uddin",
-    items: [
-      { name: "Aarong Cotton Block Print Kurta", size: "M", quantity: 1, price: 1850, imgBg: "F5EFE6", imgFg: "2D2D2D", imgText: "Aarong" },
-    ],
-    pricing: { subtotal: 1850, discount: 0, shipping: 0, total: 1850 },
-    steps: buildMockSteps(placedAt),
+    orderId: result.orderId,
+    customerName: "",
+    items: result.items.map((it) => ({
+      name: it.productName,
+      size: it.variant?.size ?? "-",
+      quantity: it.quantity,
+      imgBg: "F5EFE6",
+      imgFg: "2D2D2D",
+      imgText: it.productName.split(" ")[0] || "Item",
+    })),
+    steps: buildStepsFromBackend(result),
   }
 }
 
@@ -248,9 +241,11 @@ function ResultsCard({ order }: { order: TrackedOrder }) {
             <p className="font-sans font-semibold" style={{ fontSize: "15px", color: "var(--color-brand-charcoal)" }}>
               {order.orderId}
             </p>
-            <p className="font-sans mt-0.5" style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.5 }}>
-              {order.customerName}
-            </p>
+            {order.customerName && (
+              <p className="font-sans mt-0.5" style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.5 }}>
+                {order.customerName}
+              </p>
+            )}
           </div>
           <span
             className="font-sans font-bold text-xs px-3 py-1.5 rounded-full"
@@ -320,28 +315,32 @@ function ResultsCard({ order }: { order: TrackedOrder }) {
                   Size {item.size} · Qty {item.quantity}
                 </p>
               </div>
-              <p className="font-sans font-semibold flex-shrink-0" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>
-                {taka(item.price * item.quantity)}
-              </p>
+              {item.price !== undefined && (
+                <p className="font-sans font-semibold flex-shrink-0" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>
+                  {taka(item.price * item.quantity)}
+                </p>
+              )}
             </div>
           ))}
         </div>
 
-        <div className="space-y-1.5 pt-4" style={{ borderTop: "1px solid var(--color-border-light)" }}>
-          {order.pricing.discount > 0 && (
-            <div className="flex justify-between font-sans text-sm font-semibold" style={{ color: "#5a8a6a" }}>
-              <span>Discount</span><span>−{taka(order.pricing.discount)}</span>
+        {order.pricing && (
+          <div className="space-y-1.5 pt-4" style={{ borderTop: "1px solid var(--color-border-light)" }}>
+            {order.pricing.discount > 0 && (
+              <div className="flex justify-between font-sans text-sm font-semibold" style={{ color: "#5a8a6a" }}>
+                <span>Discount</span><span>−{taka(order.pricing.discount)}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-sans text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+              <span>Shipping</span>
+              <span>{order.pricing.shipping === 0 ? <span style={{ color: "#5a8a6a", fontWeight: 600 }}>FREE</span> : taka(order.pricing.shipping)}</span>
             </div>
-          )}
-          <div className="flex justify-between font-sans text-sm" style={{ color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
-            <span>Shipping</span>
-            <span>{order.pricing.shipping === 0 ? <span style={{ color: "#5a8a6a", fontWeight: 600 }}>FREE</span> : taka(order.pricing.shipping)}</span>
+            <div className="flex justify-between font-sans font-bold" style={{ paddingTop: "10px", borderTop: "1px solid var(--color-border-light)", marginTop: "6px" }}>
+              <span style={{ fontSize: "15px", color: "var(--color-brand-charcoal)" }}>Total</span>
+              <span style={{ fontSize: "15px", color: "var(--color-brand-charcoal)" }}>{taka(order.pricing.total)}</span>
+            </div>
           </div>
-          <div className="flex justify-between font-sans font-bold" style={{ paddingTop: "10px", borderTop: "1px solid var(--color-border-light)", marginTop: "6px" }}>
-            <span style={{ fontSize: "15px", color: "var(--color-brand-charcoal)" }}>Total</span>
-            <span style={{ fontSize: "15px", color: "var(--color-brand-charcoal)" }}>{taka(order.pricing.total)}</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Need help */}
@@ -373,28 +372,22 @@ export default function OrderTrackingPage() {
   const [hasSearched, setHasSearched] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const doSearch = (q: string) => {
+  const doSearch = async (q: string) => {
     if (!q.trim()) return
     setSearching(true)
     setNotFound(false)
     setHasSearched(true)
 
-    setTimeout(() => {
-      // Try session order first
-      const session = getMockFromSession()
-      if (session && (session.orderId === q.trim() || session.customerName)) {
-        if (session.orderId === q.trim() || /^0?1[3-9]\d{8}$/.test(q.trim().replace(/\s/g, ""))) {
-          setOrder(session)
-          setSearching(false)
-          return
-        }
-      }
-      // Try demo
-      const demo = getDemoOrder(q.trim())
-      setOrder(demo)
-      setNotFound(!demo)
+    try {
+      const { payload } = await trackOrder(q.trim())
+      setOrder(fromTrackOrderResult(payload))
+      setNotFound(false)
+    } catch {
+      setOrder(null)
+      setNotFound(true)
+    } finally {
       setSearching(false)
-    }, 900)
+    }
   }
 
   // Auto-search on URL param
@@ -435,7 +428,7 @@ export default function OrderTrackingPage() {
             className="font-sans"
             style={{ fontSize: "15px", color: "var(--color-brand-charcoal)", opacity: 0.6, maxWidth: "480px", margin: "0 auto" }}
           >
-            Enter your order ID or the phone number used at checkout.
+            Enter the order ID from your confirmation email.
           </p>
         </div>
       </div>
@@ -455,7 +448,7 @@ export default function OrderTrackingPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") doSearch(query) }}
-            placeholder="e.g. FH-1719234567 or 01712345678"
+            placeholder="e.g. ORD00000001"
             style={{
               flex: 1,
               height: "50px",
@@ -505,20 +498,6 @@ export default function OrderTrackingPage() {
             {searching ? "Searching…" : "Track Order"}
           </button>
         </div>
-
-        {/* Hint */}
-        {!hasSearched && (
-          <p
-            className="font-sans text-center mt-3"
-            style={{ fontSize: "12px", color: "var(--color-brand-charcoal)", opacity: 0.4 }}
-          >
-            Try <button
-              className="underline"
-              onClick={() => { setQuery("FH-DEMO01"); doSearch("FH-DEMO01") }}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", padding: 0, fontSize: "inherit" }}
-            >FH-DEMO01</button> to see a sample
-          </p>
-        )}
 
         {/* Not found */}
         {notFound && hasSearched && (

@@ -12,7 +12,7 @@ export const metadata = {
 
 export default function Page() {
   return (
-    <div className="min-h-screen font-sans bg-[#f4f5f9]">
+    <div className="min-h-screen font-sans" style={{ background: "var(--color-brand-ivory)" }}>
       <AnnouncementBar />
       <Header />
 

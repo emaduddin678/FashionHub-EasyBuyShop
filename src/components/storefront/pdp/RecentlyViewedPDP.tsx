@@ -3,31 +3,48 @@
 import { useState, useEffect } from "react"
 import { ProductCard } from "@/components/storefront/ProductCard"
 import { PRODUCTS, type Product } from "@/lib/data/products"
+import { fetchProductById, normalizeProduct } from "@/lib/api/products"
 
 const STORAGE_KEY = "fh_recently_viewed"
 const MAX_ITEMS = 6
 
-export function RecentlyViewedPDP({ currentProductId }: { currentProductId: number }) {
+const isBackendId = (id: string | number) => /^[0-9a-fA-F]{24}$/.test(String(id))
+
+async function resolveProduct(id: string | number): Promise<Product | undefined> {
+  if (isBackendId(id)) {
+    const backendProduct = await fetchProductById(String(id))
+    return backendProduct ? normalizeProduct(backendProduct) : undefined
+  }
+  return PRODUCTS.find((p) => p.id === id)
+}
+
+export function RecentlyViewedPDP({ currentProductId }: { currentProductId: string | number }) {
   const [products, setProducts] = useState<Product[]>([])
 
   useEffect(() => {
-    try {
-      const existing: number[] = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]")
-      const updated = [
-        currentProductId,
-        ...existing.filter((id) => id !== currentProductId),
-      ].slice(0, MAX_ITEMS)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+    let cancelled = false
 
-      const others = updated
-        .filter((id) => id !== currentProductId)
-        .map((id) => PRODUCTS.find((p) => p.id === id))
-        .filter((p): p is Product => p !== undefined)
+    async function run() {
+      try {
+        const existing: (string | number)[] = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "[]")
+        const updated = [
+          currentProductId,
+          ...existing.filter((id) => String(id) !== String(currentProductId)),
+        ].slice(0, MAX_ITEMS)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
 
-      setProducts(others)
-    } catch {
-      // localStorage not available
+        const otherIds = updated.filter((id) => String(id) !== String(currentProductId))
+        const resolved = await Promise.all(otherIds.map(resolveProduct))
+        const others = resolved.filter((p): p is Product => p !== undefined)
+
+        if (!cancelled) setProducts(others)
+      } catch {
+        // localStorage not available
+      }
     }
+
+    run()
+    return () => { cancelled = true }
   }, [currentProductId])
 
   if (products.length === 0) return null
@@ -50,7 +67,7 @@ export function RecentlyViewedPDP({ currentProductId }: { currentProductId: numb
 
         <div className="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide -mx-1 px-1">
           {products.map((p) => (
-            <div key={p.id} className="snap-start flex-shrink-0 w-[220px] sm:w-[240px]">
+            <div key={p._id ?? p.id} className="snap-start flex-shrink-0 w-[220px] sm:w-[240px]">
               <ProductCard product={p} />
             </div>
           ))}

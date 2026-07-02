@@ -5,7 +5,8 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { Search, Heart, ShoppingBag, User, Menu, X, ChevronDown } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useAppSelector } from "@/lib/store/hooks"
+import { useAppDispatch, useAppSelector } from "@/lib/store/hooks"
+import { logoutUser } from "@/lib/store/authSlice"
 
 // ── Nav data ──────────────────────────────────────────────────────────────────
 
@@ -297,6 +298,103 @@ function MobileDrawer({ open, onClose, cartCount, wishlistCount }: {
   )
 }
 
+// ── Account menu (smart — shows user dropdown when logged in) ───────────────────
+
+function AccountMenu() {
+  const dispatch = useAppDispatch()
+  const router = useRouter()
+  const user = useAppSelector((s) => s.auth.user)
+  const sessionChecked = useAppSelector((s) => s.auth.sessionChecked)
+  const [open, setOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const handleLogout = async () => {
+    setOpen(false)
+    await dispatch(logoutUser())
+    router.push("/")
+  }
+
+  if (!sessionChecked) {
+    return <div className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg">
+      <div className="w-6 h-6 rounded-full animate-pulse" style={{ background: "var(--color-brand-beige)" }} />
+    </div>
+  }
+
+  if (!user) {
+    return (
+      <Link href="/account/login"
+        className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-brand-charcoal/70 hover:text-brand-rose hover:bg-brand-rose/8 transition-colors"
+        aria-label="Sign in">
+        <User className="w-5 h-5" />
+      </Link>
+    )
+  }
+
+  return (
+    <div className="relative hidden md:block" ref={menuRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-9 h-9 flex items-center justify-center rounded-full font-sans font-bold transition-colors"
+        style={{ background: "var(--color-brand-rose)", color: "var(--color-brand-ivory)", fontSize: "13px" }}
+        aria-label="Account menu"
+      >
+        {user.firstName[0]?.toUpperCase()}
+      </button>
+
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 w-52 rounded-xl overflow-hidden z-50"
+          style={{ background: "var(--color-brand-ivory)", border: "1px solid var(--color-border)", boxShadow: "0 8px 30px rgba(45,42,38,0.14)" }}
+        >
+          <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--color-border-light)" }}>
+            <p className="font-sans font-semibold" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}>
+              {user.firstName} {user.lastName}
+            </p>
+            <p className="font-sans truncate" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.5 }}>
+              {user.email}
+            </p>
+          </div>
+          <Link
+            href="/account"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2.5 font-sans hover:bg-brand-beige transition-colors"
+            style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}
+          >
+            My Account
+          </Link>
+          <Link
+            href="/wishlist"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2.5 font-sans hover:bg-brand-beige transition-colors"
+            style={{ fontSize: "13px", color: "var(--color-brand-charcoal)" }}
+          >
+            My Wishlist
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="w-full text-left px-4 py-2.5 font-sans transition-colors"
+            style={{ fontSize: "13px", color: "var(--color-brand-rose)", borderTop: "1px solid var(--color-border-light)" }}
+          >
+            Sign Out
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Main Header ───────────────────────────────────────────────────────────────
 
 export function Header() {
@@ -424,12 +522,8 @@ export function Header() {
               <Badge count={cartCount} />
             </Link>
 
-            {/* Account */}
-            <Link href="/account"
-              className="hidden md:flex w-9 h-9 items-center justify-center rounded-lg text-brand-charcoal/70 hover:text-brand-rose hover:bg-brand-rose/8 transition-colors"
-              aria-label="My account">
-              <User className="w-5 h-5" />
-            </Link>
+            {/* Account (smart — shows user menu when logged in) */}
+            <AccountMenu />
           </div>
 
         </div>

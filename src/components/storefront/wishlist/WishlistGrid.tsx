@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { useAppDispatch } from "@/lib/store/hooks"
-import { removeFromWishlist, type WishlistItem } from "@/lib/store/wishlistSlice"
+import { removeWishlistItem, toggleWishlistItem, type WishlistItem } from "@/lib/store/wishlistSlice"
 import { addToCart } from "@/lib/store/cartSlice"
 import { WishlistItemCard } from "./WishlistItem"
 import type { ClothingSize } from "@/lib/data/products"
@@ -17,7 +17,7 @@ interface Props {
 
 export function WishlistGrid({ items, onToast, onAddedToCart }: Props) {
   const dispatch = useAppDispatch()
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [selectedIds, setSelectedIds] = useState<Set<string | number>>(new Set())
   const [sortBy, setSortBy] = useState<SortOption>("recently-added")
 
   const allSelected = items.length > 0 && items.every((i) => selectedIds.has(i.id))
@@ -30,7 +30,7 @@ export function WishlistGrid({ items, onToast, onAddedToCart }: Props) {
     }
   }
 
-  function toggleSelect(id: number) {
+  function toggleSelect(id: string | number) {
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -65,13 +65,11 @@ export function WishlistGrid({ items, onToast, onAddedToCart }: Props) {
   function handleBulkRemove() {
     const idsToRemove = [...selectedIds]
     const removedItems = items.filter((i) => idsToRemove.includes(i.id))
-    idsToRemove.forEach((id) => dispatch(removeFromWishlist({ id })))
+    idsToRemove.forEach((id) => dispatch(removeWishlistItem(id)))
     onToast(
       `Removed ${idsToRemove.length} item${idsToRemove.length > 1 ? "s" : ""}`,
       () => {
-        removedItems.forEach((item) =>
-          dispatch({ type: "wishlist/addToWishlist", payload: item }),
-        )
+        removedItems.forEach((item) => dispatch(toggleWishlistItem(item)))
       },
     )
     setSelectedIds(new Set())
@@ -98,9 +96,9 @@ export function WishlistGrid({ items, onToast, onAddedToCart }: Props) {
             type="checkbox"
             checked={allSelected}
             onChange={toggleSelectAll}
-            className="w-[18px] h-[18px] rounded accent-[#1A2B5E] cursor-pointer"
+            className="w-[18px] h-[18px] rounded accent-brand-charcoal cursor-pointer"
           />
-          <span className="text-sm font-medium text-[#1A2B5E]">
+          <span className="text-sm font-medium text-brand-charcoal">
             Select All ({items.length})
           </span>
         </label>
@@ -110,7 +108,7 @@ export function WishlistGrid({ items, onToast, onAddedToCart }: Props) {
           <div className="flex flex-wrap gap-2">
             <button
               onClick={handleBulkAddToCart}
-              className="bg-[#1A2B5E] text-white text-sm px-4 py-2 rounded-lg hover:bg-[#152249] transition-colors"
+              className="bg-brand-charcoal text-white text-sm px-4 py-2 rounded-lg hover:bg-[#152249] transition-colors"
             >
               Add Selected to Cart ({numSelected})
             </button>
@@ -130,7 +128,7 @@ export function WishlistGrid({ items, onToast, onAddedToCart }: Props) {
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-[#1A2B5E] bg-white text-gray-700 cursor-pointer"
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 outline-none focus:border-brand-charcoal bg-white text-gray-700 cursor-pointer"
         >
           <option value="recently-added">Recently Added</option>
           <option value="price-asc">Price: Low to High</option>

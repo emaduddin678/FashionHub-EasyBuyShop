@@ -81,22 +81,22 @@ export function WishlistSummary({ items, onToast }: Props) {
     <div className="sticky top-24 space-y-4">
       {/* Main summary card */}
       <div className="bg-white rounded-xl border shadow-sm p-6">
-        <h2 className="font-semibold text-lg text-[#1A2B5E] pb-3 mb-4 border-b">
+        <h2 className="font-semibold text-lg text-brand-charcoal pb-3 mb-4 border-b">
           Wishlist Summary
         </h2>
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-2xl font-bold text-[#1A2B5E]">{items.length}</p>
+            <p className="text-2xl font-bold text-brand-charcoal">{items.length}</p>
             <p className="text-xs text-gray-400 mt-0.5">Items Saved</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="font-bold text-[#1A2B5E] text-lg">৳{totalValue.toLocaleString()}</p>
+            <p className="font-bold text-brand-charcoal text-lg">৳{totalValue.toLocaleString()}</p>
             <p className="text-xs text-gray-400 mt-0.5">Total Value</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="font-bold text-[#D4A017] text-lg">{onSaleCount}</p>
+            <p className="font-bold text-brand-gold text-lg">{onSaleCount}</p>
             <p className="text-xs text-gray-400 mt-0.5">On Sale</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-3 text-center">
@@ -109,7 +109,7 @@ export function WishlistSummary({ items, onToast }: Props) {
         <button
           onClick={handleAddAllToCart}
           disabled={items.length === 0}
-          className="w-full bg-[#D4A017] text-[#1A2B5E] font-bold py-3.5 rounded-xl mt-2 hover:bg-amber-500 transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+          className="w-full bg-brand-gold text-brand-charcoal font-bold py-3.5 rounded-xl mt-2 hover:bg-amber-500 transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
         >
           🛒 Add All to Cart
         </button>
@@ -118,7 +118,7 @@ export function WishlistSummary({ items, onToast }: Props) {
       {/* Share wishlist */}
       <div className="bg-white rounded-xl border shadow-sm p-6">
         <div className="bg-gray-50 rounded-xl p-4">
-          <p className="text-sm font-medium text-[#1A2B5E]">Share Your Wishlist</p>
+          <p className="text-sm font-medium text-brand-charcoal">Share Your Wishlist</p>
           <p className="text-xs text-gray-400 mt-1">
             Let friends and family know what you&apos;d love
           </p>
@@ -143,7 +143,7 @@ export function WishlistSummary({ items, onToast }: Props) {
             </a>
             <button
               onClick={handleCopyLink}
-              className="flex flex-col items-center justify-center bg-white border rounded-lg py-2 text-xs text-gray-600 hover:border-[#1A2B5E] hover:text-[#1A2B5E] transition-colors gap-1"
+              className="flex flex-col items-center justify-center bg-white border rounded-lg py-2 text-xs text-gray-600 hover:border-brand-charcoal hover:text-brand-charcoal transition-colors gap-1"
             >
               <span>{copied ? "✓" : "🔗"}</span>
               <span>{copied ? "Copied!" : "Copy Link"}</span>
@@ -156,7 +156,7 @@ export function WishlistSummary({ items, onToast }: Props) {
       {recentlyViewed.length > 0 && (
         <div className="bg-white rounded-xl border shadow-sm p-6">
           <div className="border-t pt-0">
-            <p className="text-sm font-medium text-[#1A2B5E] mb-3">Items You Viewed</p>
+            <p className="text-sm font-medium text-brand-charcoal mb-3">Items You Viewed</p>
             <div className="flex gap-2">
               {recentlyViewed.map((product) => (
                 <Link

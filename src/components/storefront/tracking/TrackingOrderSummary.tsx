@@ -47,7 +47,7 @@ export function TrackingOrderSummary({ orderId, items, pricing, payment }: Track
     <div className="sticky top-24">
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         {/* Title */}
-        <h2 className="font-semibold text-lg text-[#1A2B5E] pb-3 mb-4 border-b border-gray-100">
+        <h2 className="font-semibold text-lg text-brand-charcoal pb-3 mb-4 border-b border-gray-100">
           Order Summary
         </h2>
 
@@ -64,7 +64,7 @@ export function TrackingOrderSummary({ orderId, items, pricing, payment }: Track
                 className="w-14 h-14 rounded-lg bg-gray-50 object-cover flex-shrink-0"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[#1A2B5E] truncate">{item.name}</p>
+                <p className="text-sm font-medium text-brand-charcoal truncate">{item.name}</p>
                 {item.brand && <p className="text-xs text-gray-400">{item.brand}</p>}
                 <p className="text-xs text-gray-400">Size {item.size} · Qty {item.quantity}</p>
               </div>
@@ -95,7 +95,7 @@ export function TrackingOrderSummary({ orderId, items, pricing, payment }: Track
           </div>
           <div className="flex justify-between font-bold pt-2 border-t border-gray-100">
             <span>Total</span>
-            <span className="text-[#1A2B5E] text-base">৳{fmt(pricing.total)}</span>
+            <span className="text-brand-charcoal text-base">৳{fmt(pricing.total)}</span>
           </div>
         </div>
 
@@ -112,7 +112,7 @@ export function TrackingOrderSummary({ orderId, items, pricing, payment }: Track
             href={`https://wa.me/8801712345678?text=${waMessage}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full border border-[#1A2B5E] text-[#1A2B5E] font-semibold py-2.5 rounded-xl text-sm hover:bg-[#1A2B5E] hover:text-white transition-colors"
+            className="flex items-center justify-center gap-2 w-full border border-brand-charcoal text-brand-charcoal font-semibold py-2.5 rounded-xl text-sm hover:bg-brand-charcoal hover:text-white transition-colors"
           >
             <Phone className="w-4 h-4" />
             Contact Support
@@ -126,14 +126,14 @@ export function TrackingOrderSummary({ orderId, items, pricing, payment }: Track
         </div>
 
         {/* Need help box */}
-        <div className="bg-[#1A2B5E] rounded-xl p-4 mt-4 text-center">
+        <div className="bg-brand-charcoal rounded-xl p-4 mt-4 text-center">
           <p className="text-white font-medium text-sm">Need help?</p>
           <p className="text-white/70 text-xs mt-1">Our team is available 24/7</p>
           <a
             href={`https://wa.me/8801712345678?text=${waMessage}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 flex items-center justify-center w-full bg-[#D4A017] hover:bg-[#b8881a] text-[#1A2B5E] font-bold py-2.5 rounded-xl text-sm transition-colors"
+            className="mt-3 flex items-center justify-center w-full bg-brand-gold hover:bg-[#b8881a] text-brand-charcoal font-bold py-2.5 rounded-xl text-sm transition-colors"
           >
             💬 Chat Now
           </a>
