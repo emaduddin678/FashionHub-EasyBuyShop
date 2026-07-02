@@ -138,8 +138,16 @@ function colorFromName(name: string): ProductColor {
   return { name, hex }
 }
 
+/** `p.discountPercent` comes back null on every live product even when
+ *  regularPrice > sellingPrice (confirmed against the running backend) —
+ *  computed here instead of trusted, so the "sale" badge actually fires. */
+function computeDiscountPercent(p: BackendProduct): number {
+  if (p.regularPrice <= p.sellingPrice || p.regularPrice <= 0) return 0
+  return Math.round(((p.regularPrice - p.sellingPrice) / p.regularPrice) * 100)
+}
+
 function buildBadge(p: BackendProduct): ProductBadge {
-  const discount = p.discountPercent ?? 0
+  const discount = computeDiscountPercent(p)
   if (discount >= 10) return "sale"
   if (p.isFeatured) return "featured"
   const ageMs = Date.now() - new Date(p.createdAt).getTime()
