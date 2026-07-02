@@ -21,21 +21,31 @@ interface ProductCardProps {
 }
 
 const BADGE_STYLES: Record<string, { bg: string; label: string }> = {
-  new:      { bg: "var(--color-badge-new)",      label: "NEW" },
-  sale:     { bg: "var(--color-badge-sale)",     label: "SALE" },
+  new: { bg: "var(--color-badge-new)", label: "NEW" },
+  sale: { bg: "var(--color-badge-sale)", label: "SALE" },
   featured: { bg: "var(--color-badge-featured)", label: "FEATURED" },
 }
 
 function Stars({ rating }: { rating: number }) {
   const r = Math.round(rating)
   return (
-    <span className="text-brand-rose tracking-widest" style={{ fontSize: "12px" }}>
-      {"★".repeat(r)}{"☆".repeat(5 - r)}
+    <span
+      className="tracking-widest text-brand-rose"
+      style={{ fontSize: "12px" }}
+    >
+      {"★".repeat(r)}
+      {"☆".repeat(5 - r)}
     </span>
   )
 }
 
-export function ProductCard({ product, rank, onQuickView: _onQuickView, priceColor: _priceColor, ctaLabel: _ctaLabel }: ProductCardProps) {
+export function ProductCard({
+  product,
+  rank,
+  onQuickView: _onQuickView,
+  priceColor: _priceColor,
+  ctaLabel: _ctaLabel,
+}: ProductCardProps) {
   const dispatch = useAppDispatch()
   const [selectedSize, setSelectedSize] = useState<ClothingSize | null>(null)
   const [added, setAdded] = useState(false)
@@ -46,7 +56,7 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
   const productKey = product._id ?? product.id
 
   const isWishlisted = useAppSelector((s) =>
-    s.wishlist.items.some((i) => String(i.id) === String(productKey)),
+    s.wishlist.items.some((i) => String(i.id) === String(productKey))
   )
 
   const firstWord = encodeURIComponent(product.name.split(" ")[0] || "Item")
@@ -66,7 +76,7 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
         imgBg: "F5EFE6",
         imgFg: "2D2D2D",
         imgText: product.name.split(" ")[0] || "Item",
-      }),
+      })
     )
     setAdded(true)
     setTimeout(() => {
@@ -96,7 +106,7 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
         imgBg: "F5EFE6",
         imgFg: "2D2D2D",
         imgText: product.name.split(" ")[0] || "Item",
-      }),
+      })
     )
   }
 
@@ -108,7 +118,7 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
 
   return (
     <div
-      className="group flex flex-col bg-white hover:-translate-y-1 transition-all duration-300"
+      className="group flex flex-col bg-white transition-all duration-300 hover:-translate-y-1"
       style={{
         borderRadius: "var(--radius-card)",
         boxShadow: "var(--shadow-card)",
@@ -118,8 +128,11 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
       {/* ── Image wrapper ── */}
       <Link
         href={productHref}
-        className="relative block overflow-hidden flex-shrink-0"
-        style={{ aspectRatio: "3 / 4", borderRadius: "var(--radius-card) var(--radius-card) 0 0" }}
+        className="relative block flex-shrink-0 overflow-hidden"
+        style={{
+          aspectRatio: "3 / 4",
+          borderRadius: "var(--radius-card) var(--radius-card) 0 0",
+        }}
       >
         <Image
           src={imgUrl}
@@ -132,7 +145,7 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
         {/* Ghosted rank number (Best Sellers only) */}
         {rank !== undefined && (
           <span
-            className="absolute bottom-2 right-3 font-heading text-brand-ivory/20 leading-none select-none pointer-events-none"
+            className="pointer-events-none absolute right-3 bottom-2 font-heading leading-none text-brand-ivory/20 select-none"
             style={{ fontSize: "clamp(2.5rem, 6vw, 4rem)" }}
             aria-hidden="true"
           >
@@ -143,7 +156,7 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
         {/* Badge — top-left */}
         {badge && (
           <span
-            className="absolute top-3 left-3 z-10 font-sans font-bold text-brand-ivory px-2.5 py-1 rounded uppercase tracking-wider"
+            className="absolute top-3 left-3 z-10 rounded px-2.5 py-1 font-sans font-bold tracking-wider text-brand-ivory uppercase"
             style={{ fontSize: "10px", background: badge.bg }}
           >
             {badge.label}
@@ -154,10 +167,10 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
         <button
           onClick={handleWishlist}
           aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
-          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-sm transition-all hover:scale-110"
+          className="absolute top-3 right-3 z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/90 shadow-sm transition-all hover:scale-110 hover:bg-white"
         >
           <Heart
-            className="w-4 h-4 transition-colors"
+            className="h-4 w-4 transition-colors"
             fill={isWishlisted ? "#E8A4B0" : "none"}
             stroke={isWishlisted ? "#E8A4B0" : "#2D2D2D"}
             strokeWidth={2}
@@ -166,37 +179,48 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
 
         {/* Quick-add — slides up on hover */}
         <div
-          className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 p-3"
+          className="absolute inset-x-0 bottom-0 translate-y-full p-3 transition-transform duration-300 group-hover:translate-y-0"
           style={{ background: "rgba(45,45,45,0.82)" }}
           onClick={(e) => e.preventDefault()}
         >
-          <p className="font-sans text-brand-ivory/60 uppercase tracking-widest mb-2" style={{ fontSize: "9px" }}>
+          <p
+            className="mb-2 font-sans tracking-widest text-brand-ivory/60 uppercase"
+            style={{ fontSize: "9px" }}
+          >
             Select Size
           </p>
           <div className="flex items-center gap-1.5">
             {product.sizes.map((sz) => (
               <button
                 key={sz}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedSize(sz) }}
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  setSelectedSize(sz)
+                }}
                 className={cn(
-                  "h-7 px-2 rounded text-xs font-semibold transition-all",
+                  "h-7 rounded px-2 text-xs font-semibold transition-all",
                   selectedSize === sz
-                    ? "bg-brand-ivory text-brand-charcoal scale-105"
-                    : "bg-white/10 text-white/70 hover:bg-white/25",
+                    ? "scale-105 bg-brand-ivory text-brand-charcoal"
+                    : "bg-white/10 text-white/70 hover:bg-white/25"
                 )}
               >
                 {sz}
               </button>
             ))}
             <button
-              onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (selectedSize) handleAddToCart(selectedSize) }}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                if (selectedSize) handleAddToCart(selectedSize)
+              }}
               className={cn(
-                "flex-1 h-7 rounded text-xs font-bold transition-all",
+                "h-7 flex-1 rounded text-xs font-bold transition-all",
                 added
                   ? "bg-green-500 text-white"
                   : selectedSize
-                  ? "bg-brand-rose text-white hover:bg-brand-mauve"
-                  : "bg-white/10 text-white/30 cursor-not-allowed",
+                    ? "bg-brand-rose text-white hover:bg-brand-mauve"
+                    : "cursor-not-allowed bg-white/10 text-white/30"
               )}
             >
               {added ? "✓ Added!" : selectedSize ? "Add to Cart" : "Pick Size"}
@@ -209,7 +233,7 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
       <Link href={productHref} className="flex flex-col gap-1 p-4 pt-3">
         {/* Brand */}
         <p
-          className="font-sans uppercase tracking-widest text-brand-charcoal/60"
+          className="font-sans tracking-widest text-brand-charcoal/60 uppercase"
           style={{ fontSize: "11px" }}
         >
           {product.brand}
@@ -217,33 +241,45 @@ export function ProductCard({ product, rank, onQuickView: _onQuickView, priceCol
 
         {/* Name */}
         <p
-          className="font-sans text-brand-charcoal leading-snug line-clamp-2"
+          className="line-clamp-2 font-sans leading-snug text-brand-charcoal"
           style={{ fontSize: "14px" }}
         >
           {product.name}
         </p>
 
         {/* Rating */}
-        <div className="flex items-center gap-1.5 mt-0.5">
+        <div className="mt-0.5 flex items-center gap-1.5">
           <Stars rating={product.rating} />
-          <span className="font-sans text-brand-charcoal/50" style={{ fontSize: "11px" }}>
+          <span
+            className="font-sans text-brand-charcoal/50"
+            style={{ fontSize: "11px" }}
+          >
             {product.rating.toFixed(1)} ({product.reviewCount})
           </span>
         </div>
 
         {/* Price */}
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
-          <span className="font-sans font-semibold text-brand-charcoal" style={{ fontSize: "16px" }}>
+        <div className="mt-1 flex flex-wrap items-center gap-2">
+          <span
+            className="font-sans font-semibold text-brand-charcoal"
+            style={{ fontSize: "16px" }}
+          >
             ৳{product.price.toLocaleString()}
           </span>
           {savings > 0 && (
             <>
-              <span className="font-sans text-brand-charcoal/40 line-through" style={{ fontSize: "13px" }}>
+              <span
+                className="font-sans text-brand-charcoal/40 line-through"
+                style={{ fontSize: "13px" }}
+              >
                 ৳{product.originalPrice!.toLocaleString()}
               </span>
               <span
-                className="font-sans font-semibold text-brand-rose rounded-full px-2 py-0.5"
-                style={{ fontSize: "11px", background: "rgba(232,164,176,0.12)" }}
+                className="rounded-full px-2 py-0.5 font-sans font-semibold text-brand-rose"
+                style={{
+                  fontSize: "11px",
+                  background: "rgba(232,164,176,0.12)",
+                }}
               >
                 ৳{savings.toLocaleString()} OFF
               </span>
