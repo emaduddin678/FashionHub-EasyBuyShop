@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { X, Check } from "lucide-react"
 import { AuthLayout } from "@/components/storefront/auth/AuthLayout"
 import { PasswordInput } from "@/components/storefront/auth/PasswordInput"
@@ -69,49 +69,6 @@ function Toast({ message, type, onDismiss }: { message: string; type: "success" 
   )
 }
 
-// ── Success screen ─────────────────────────────────────────────────────────────
-
-function SuccessScreen({ firstName, email }: { firstName: string; email: string }) {
-  return (
-    <div className="text-center py-6">
-      <div
-        className="mx-auto mb-5 flex items-center justify-center"
-        style={{ width: "72px", height: "72px", borderRadius: "50%", background: "rgba(90,138,106,0.12)" }}
-      >
-        <Check size={32} strokeWidth={2} style={{ color: "#5a8a6a" }} />
-      </div>
-      <h2
-        className="font-heading font-light"
-        style={{ fontSize: "clamp(1.75rem, 3vw, 2rem)", color: "var(--color-brand-charcoal)", lineHeight: 1.15, marginBottom: "8px" }}
-      >
-        Almost there, {firstName}!
-      </h2>
-      <p className="font-sans mb-2" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
-        We&apos;ve sent an activation link to <span style={{ fontWeight: 600 }}>{email}</span>.
-      </p>
-      <p className="font-sans mb-8" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)", opacity: 0.5 }}>
-        Click the link in that email to activate your account, then sign in.
-      </p>
-      <div className="space-y-3">
-        <Link
-          href="/account/login"
-          className="block w-full font-sans font-semibold text-sm rounded-full text-center"
-          style={{ height: "50px", lineHeight: "50px", background: "var(--color-brand-rose)", color: "var(--color-brand-ivory)" }}
-        >
-          Go to Sign In →
-        </Link>
-        <Link
-          href="/"
-          className="block w-full font-sans font-semibold text-sm rounded-full text-center"
-          style={{ height: "50px", lineHeight: "50px", border: "1.5px solid var(--color-border)", color: "var(--color-brand-charcoal)" }}
-        >
-          Continue Browsing
-        </Link>
-      </div>
-    </div>
-  )
-}
-
 // ── Checkbox ───────────────────────────────────────────────────────────────────
 
 function Checkbox({
@@ -165,6 +122,8 @@ interface FormErrors {
 }
 
 export default function RegisterPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const dispatch = useAppDispatch()
   const authStatus = useAppSelector((s) => s.auth.status)
   const { checking } = useRedirectIfAuthenticated()
@@ -178,7 +137,6 @@ export default function RegisterPage() {
   const [terms, setTerms] = useState(false)
   const [newsletter, setNewsletter] = useState(true)
   const [errors, setErrors] = useState<FormErrors>({})
-  const [success, setSuccess] = useState(false)
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null)
 
   const loading = authStatus === "loading"
@@ -215,7 +173,9 @@ export default function RegisterPage() {
     )
 
     if (registerUser.fulfilled.match(result)) {
-      setSuccess(true)
+      const user = result.payload
+      showToast(`Welcome, ${user.firstName}!`, "success")
+      setTimeout(() => router.push(searchParams.get("returnUrl") || "/account"), 900)
     } else {
       const msg = (result.payload as string) || "Registration failed. Please try again."
       setErrors((prev) => ({ ...prev, server: msg }))
@@ -239,202 +199,196 @@ export default function RegisterPage() {
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
 
       <AuthLayout mode="register">
-        {success ? (
-          <SuccessScreen firstName={firstName || "there"} email={email} />
-        ) : (
-          <>
-            <h1
-              className="font-heading font-light"
-              style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.125rem)", color: "var(--color-brand-charcoal)", lineHeight: 1.2, marginBottom: "6px" }}
-            >
-              Create Your Account
-            </h1>
-            <p className="font-sans mb-7" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
-              Join FashionHub and shop the latest looks.
-            </p>
+        <h1
+          className="font-heading font-light"
+          style={{ fontSize: "clamp(1.75rem, 3.5vw, 2.125rem)", color: "var(--color-brand-charcoal)", lineHeight: 1.2, marginBottom: "6px" }}
+        >
+          Create Your Account
+        </h1>
+        <p className="font-sans mb-7" style={{ fontSize: "14px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+          Join FashionHub and shop the latest looks.
+        </p>
 
-            <form onSubmit={handleRegister} className="space-y-4">
-              {/* First / Last name */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel required>First Name</FieldLabel>
-                  <input
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Rahima"
-                    style={{ ...inputStyle, borderColor: errors.firstName ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                  />
-                  <FieldError msg={errors.firstName} />
-                </div>
-                <div>
-                  <FieldLabel required>Last Name</FieldLabel>
-                  <input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Khatun"
-                    style={{ ...inputStyle, borderColor: errors.lastName ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                  />
-                  <FieldError msg={errors.lastName} />
-                </div>
-              </div>
-
-              {/* Email (required — used for activation) */}
-              <div>
-                <FieldLabel required>Email Address</FieldLabel>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="email@example.com"
-                  autoComplete="email"
-                  style={{ ...inputStyle, borderColor: errors.email ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                />
-                {errors.email ? <FieldError msg={errors.email} /> : (
-                  <p className="font-sans mt-1" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.45 }}>
-                    We&apos;ll send your activation link here.
-                  </p>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div>
-                <FieldLabel optional>Phone Number</FieldLabel>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="01XXXXXXXXX"
-                  autoComplete="tel"
-                  style={{ ...inputStyle, borderColor: errors.phone ? "var(--color-brand-rose)" : "var(--color-border)" }}
-                />
-                <FieldError msg={errors.phone} />
-              </div>
-
-              {/* Password */}
-              <PasswordInput
-                label="Password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Min 8 characters"
-                autoComplete="new-password"
-                showStrength
-                error={errors.password}
+        <form onSubmit={handleRegister} className="space-y-4">
+          {/* First / Last name */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel required>First Name</FieldLabel>
+              <input
+                type="text"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                placeholder="Rahima"
+                style={{ ...inputStyle, borderColor: errors.firstName ? "var(--color-brand-rose)" : "var(--color-border)" }}
               />
+              <FieldError msg={errors.firstName} />
+            </div>
+            <div>
+              <FieldLabel required>Last Name</FieldLabel>
+              <input
+                type="text"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                placeholder="Khatun"
+                style={{ ...inputStyle, borderColor: errors.lastName ? "var(--color-brand-rose)" : "var(--color-border)" }}
+              />
+              <FieldError msg={errors.lastName} />
+            </div>
+          </div>
 
-              {/* Confirm Password */}
-              <div>
-                <FieldLabel required>Confirm Password</FieldLabel>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={confirmPwd}
-                    onChange={(e) => setConfirmPwd(e.target.value)}
-                    placeholder="Re-enter password"
-                    autoComplete="new-password"
-                    style={{
-                      ...inputStyle,
-                      borderColor: errors.confirmPwd
-                        ? "var(--color-brand-rose)"
-                        : confirmPwd && pwdMatch
-                        ? "#5a8a6a"
-                        : "var(--color-border)",
-                    }}
-                  />
-                  {confirmPwd && (
-                    <div style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)" }}>
-                      {pwdMatch
-                        ? <Check size={15} style={{ color: "#5a8a6a" }} />
-                        : <X size={15} style={{ color: "var(--color-brand-rose)" }} />}
-                    </div>
-                  )}
-                </div>
-                {confirmPwd && (
-                  <p className="font-sans mt-1" style={{ fontSize: "12px", color: pwdMatch ? "#5a8a6a" : "var(--color-brand-rose)" }}>
-                    {pwdMatch ? "Passwords match" : "Passwords don't match"}
-                  </p>
-                )}
-                <FieldError msg={errors.confirmPwd} />
-              </div>
+          {/* Email */}
+          <div>
+            <FieldLabel required>Email Address</FieldLabel>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="email@example.com"
+              autoComplete="email"
+              style={{ ...inputStyle, borderColor: errors.email ? "var(--color-brand-rose)" : "var(--color-border)" }}
+            />
+            {errors.email ? <FieldError msg={errors.email} /> : (
+              <p className="font-sans mt-1" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.45 }}>
+                We&apos;ll email you a confirmation — no need to click anything to start shopping.
+              </p>
+            )}
+          </div>
 
-              {/* Checkboxes */}
-              <div className="space-y-3 pt-1">
-                <Checkbox checked={terms} onChange={setTerms}>
-                  I agree to the{" "}
-                  <Link href="/terms" target="_blank" style={{ color: "var(--color-brand-rose)", fontWeight: 600 }}>
-                    Terms &amp; Conditions
-                  </Link>{" "}
-                  and{" "}
-                  <Link href="/privacy" target="_blank" style={{ color: "var(--color-brand-rose)", fontWeight: 600 }}>
-                    Privacy Policy
-                  </Link>
-                  <span style={{ color: "var(--color-brand-rose)" }}> *</span>
-                </Checkbox>
-                {errors.terms && <FieldError msg={errors.terms} />}
+          {/* Phone */}
+          <div>
+            <FieldLabel optional>Phone Number</FieldLabel>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="01XXXXXXXXX"
+              autoComplete="tel"
+              style={{ ...inputStyle, borderColor: errors.phone ? "var(--color-brand-rose)" : "var(--color-border)" }}
+            />
+            <FieldError msg={errors.phone} />
+          </div>
 
-                <Checkbox checked={newsletter} onChange={setNewsletter}>
-                  Sign me up for new arrival &amp; offer emails
-                </Checkbox>
-              </div>
+          {/* Password */}
+          <PasswordInput
+            label="Password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Min 8 characters"
+            autoComplete="new-password"
+            showStrength
+            error={errors.password}
+          />
 
-              {/* Server error */}
-              {errors.server && (
-                <div
-                  className="rounded-xl px-4 py-3 font-sans text-sm"
-                  style={{ background: "rgba(198,147,132,0.1)", border: "1px solid rgba(198,147,132,0.3)", color: "var(--color-brand-rose)" }}
-                >
-                  {errors.server}
+          {/* Confirm Password */}
+          <div>
+            <FieldLabel required>Confirm Password</FieldLabel>
+            <div className="relative">
+              <input
+                type="password"
+                value={confirmPwd}
+                onChange={(e) => setConfirmPwd(e.target.value)}
+                placeholder="Re-enter password"
+                autoComplete="new-password"
+                style={{
+                  ...inputStyle,
+                  borderColor: errors.confirmPwd
+                    ? "var(--color-brand-rose)"
+                    : confirmPwd && pwdMatch
+                    ? "#5a8a6a"
+                    : "var(--color-border)",
+                }}
+              />
+              {confirmPwd && (
+                <div style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)" }}>
+                  {pwdMatch
+                    ? <Check size={15} style={{ color: "#5a8a6a" }} />
+                    : <X size={15} style={{ color: "var(--color-brand-rose)" }} />}
                 </div>
               )}
-
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={loading || !terms}
-                className="w-full font-sans font-semibold text-sm rounded-full flex items-center justify-center gap-2 transition-colors"
-                style={{
-                  height: "50px",
-                  marginTop: "8px",
-                  background: loading || !terms ? "var(--color-brand-mauve)" : "var(--color-brand-rose)",
-                  color: "var(--color-brand-ivory)",
-                  border: "none",
-                  cursor: loading || !terms ? "not-allowed" : "pointer",
-                  opacity: !terms && !loading ? 0.6 : 1,
-                }}
-              >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
-                    Creating Account…
-                  </>
-                ) : (
-                  "Create Account →"
-                )}
-              </button>
-            </form>
-
-            {/* Divider */}
-            <div className="flex items-center gap-3 my-5">
-              <div className="flex-1" style={{ height: "1px", background: "var(--color-border-light)" }} />
-              <span className="font-sans" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.45 }}>or continue with</span>
-              <div className="flex-1" style={{ height: "1px", background: "var(--color-border-light)" }} />
             </div>
+            {confirmPwd && (
+              <p className="font-sans mt-1" style={{ fontSize: "12px", color: pwdMatch ? "#5a8a6a" : "var(--color-brand-rose)" }}>
+                {pwdMatch ? "Passwords match" : "Passwords don't match"}
+              </p>
+            )}
+            <FieldError msg={errors.confirmPwd} />
+          </div>
 
-            <SocialLogin onToast={(m) => showToast(m)} />
-
-            <p className="font-sans text-center mt-5" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
-              Already have an account?{" "}
-              <Link href="/account/login" style={{ color: "var(--color-brand-rose)", fontWeight: 600 }}>
-                Sign In →
+          {/* Checkboxes */}
+          <div className="space-y-3 pt-1">
+            <Checkbox checked={terms} onChange={setTerms}>
+              I agree to the{" "}
+              <Link href="/terms" target="_blank" style={{ color: "var(--color-brand-rose)", fontWeight: 600 }}>
+                Terms &amp; Conditions
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" target="_blank" style={{ color: "var(--color-brand-rose)", fontWeight: 600 }}>
+                Privacy Policy
               </Link>
-            </p>
-          </>
-        )}
+              <span style={{ color: "var(--color-brand-rose)" }}> *</span>
+            </Checkbox>
+            {errors.terms && <FieldError msg={errors.terms} />}
+
+            <Checkbox checked={newsletter} onChange={setNewsletter}>
+              Sign me up for new arrival &amp; offer emails
+            </Checkbox>
+          </div>
+
+          {/* Server error */}
+          {errors.server && (
+            <div
+              className="rounded-xl px-4 py-3 font-sans text-sm"
+              style={{ background: "rgba(198,147,132,0.1)", border: "1px solid rgba(198,147,132,0.3)", color: "var(--color-brand-rose)" }}
+            >
+              {errors.server}
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading || !terms}
+            className="w-full font-sans font-semibold text-sm rounded-full flex items-center justify-center gap-2 transition-colors"
+            style={{
+              height: "50px",
+              marginTop: "8px",
+              background: loading || !terms ? "var(--color-brand-mauve)" : "var(--color-brand-rose)",
+              color: "var(--color-brand-ivory)",
+              border: "none",
+              cursor: loading || !terms ? "not-allowed" : "pointer",
+              opacity: !terms && !loading ? 0.6 : 1,
+            }}
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin" width="16" height="16" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Creating Account…
+              </>
+            ) : (
+              "Create Account →"
+            )}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3 my-5">
+          <div className="flex-1" style={{ height: "1px", background: "var(--color-border-light)" }} />
+          <span className="font-sans" style={{ fontSize: "11px", color: "var(--color-brand-charcoal)", opacity: 0.45 }}>or continue with</span>
+          <div className="flex-1" style={{ height: "1px", background: "var(--color-border-light)" }} />
+        </div>
+
+        <SocialLogin onToast={(m) => showToast(m)} />
+
+        <p className="font-sans text-center mt-5" style={{ fontSize: "13px", color: "var(--color-brand-charcoal)", opacity: 0.6 }}>
+          Already have an account?{" "}
+          <Link href="/account/login" style={{ color: "var(--color-brand-rose)", fontWeight: 600 }}>
+            Sign In →
+          </Link>
+        </p>
       </AuthLayout>
     </>
   )

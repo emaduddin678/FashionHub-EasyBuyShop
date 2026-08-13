@@ -30,8 +30,8 @@ export const checkAuthStatus = createAsyncThunk(
       return await authApi.checkAuth()
     } catch {
       // Access token cookie (55 min) may have simply expired while the refresh
-      // token cookie (30 days) is still valid — try a silent refresh once before
-      // treating this as a real logout.
+      // token cookie (30 days for admins, 365 for customers) is still valid —
+      // try a silent refresh once before treating this as a real logout.
       try {
         await authApi.refreshToken()
         return await authApi.checkAuth()
@@ -128,8 +128,10 @@ const authSlice = createSlice({
         state.status = "loading"
         state.error = null
       })
-      .addCase(registerUser.fulfilled, (state) => {
-        state.status = "idle"
+      .addCase(registerUser.fulfilled, (state, action: PayloadAction<AuthUser>) => {
+        state.status = "succeeded"
+        state.user = action.payload
+        state.sessionChecked = true
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.status = "failed"

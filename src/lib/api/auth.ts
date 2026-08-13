@@ -65,15 +65,16 @@ const authApi = {
     password: string
     phoneNumber?: string
     agreeTerms: boolean
-  }): Promise<string> {
+  }): Promise<AuthUser> {
     const res = await fetch(`${BASE_URL}/api/users/process-register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: JSON.stringify(payload),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.message ?? "Registration failed")
-    return data.message as string
+    return data.payload.userWithoutPassword as AuthUser
   },
 
   async forgetPassword(email: string): Promise<string> {
