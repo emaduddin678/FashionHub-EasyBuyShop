@@ -682,7 +682,7 @@ and an existing Express.js + MongoDB backend.
 Backend URL: [YOUR BACKEND URL]
 Backend has these existing routes: [LIST YOUR ROUTES]
 
-Frontend is at: localhost:3000
+Frontend is at: localhost:4000
 Backend is at: [YOUR BACKEND PORT]
 
 I need to connect [specific phase] today.
@@ -726,7 +726,7 @@ SSL_WIRELESS_API_KEY=
 # Auth
 JWT_SECRET=your-secret-key
 NEXTAUTH_SECRET=your-nextauth-secret
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:4000
 
 ════════════════════════════════════════════════════════════
 PART 9 — API HELPER STRUCTURE TO CREATE

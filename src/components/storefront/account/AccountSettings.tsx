@@ -12,7 +12,11 @@ const mockUser = {
   gender: "Male",
 }
 
-function getPasswordStrength(pwd: string): { label: string; bgColor: string; width: string } {
+function getPasswordStrength(pwd: string): {
+  label: string
+  bgColor: string
+  width: string
+} {
   if (!pwd) return { label: "", bgColor: "", width: "0%" }
   if (pwd.length < 6) return { label: "Weak", bgColor: "#ef4444", width: "33%" }
   if (pwd.length >= 10 && /[^a-zA-Z0-9]/.test(pwd))
@@ -36,32 +40,37 @@ function PasswordField({
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="mb-1 block text-sm font-medium text-gray-700">
+        {label}
+      </label>
       <div className="relative">
         <input
           type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2.5 pr-10 text-sm focus:border-brand-charcoal focus:ring-2 focus:ring-brand-charcoal/20 focus:outline-none"
         />
         <button
           type="button"
           onClick={() => setShow((s) => !s)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-gray-600"
         >
           {show ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
       </div>
       {showStrength && value && (
         <div className="mt-1.5">
-          <div className="h-1.5 bg-gray-100 rounded-full">
+          <div className="h-1.5 rounded-full bg-gray-100">
             <div
               className="h-1.5 rounded-full transition-all"
-              style={{ width: strength.width, backgroundColor: strength.bgColor }}
+              style={{
+                width: strength.width,
+                backgroundColor: strength.bgColor,
+              }}
             />
           </div>
           <p
-            className="text-xs mt-0.5 font-medium"
+            className="mt-0.5 text-xs font-medium"
             style={{ color: strength.bgColor }}
           >
             {strength.label}
@@ -84,7 +93,7 @@ function Toggle({ checked, onChange }: ToggleProps) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors flex-shrink-0 ${
+      className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors ${
         checked ? "bg-brand-charcoal" : "bg-gray-200"
       }`}
     >
@@ -119,27 +128,42 @@ export default function AccountSettings() {
 
   function handleProfileSave() {
     setProfileToast(true)
-    setTimeout(() => setProfileToast(false), 3000)
+    setTimeout(() => setProfileToast(false), 4000)
   }
 
   function handlePasswordUpdate() {
     setPwdError("")
-    if (!currentPwd) { setPwdError("Enter your current password."); return }
-    if (newPwd.length < 6) { setPwdError("New password must be at least 6 characters."); return }
-    if (newPwd !== confirmPwd) { setPwdError("Passwords do not match."); return }
+    if (!currentPwd) {
+      setPwdError("Enter your current password.")
+      return
+    }
+    if (newPwd.length < 6) {
+      setPwdError("New password must be at least 6 characters.")
+      return
+    }
+    if (newPwd !== confirmPwd) {
+      setPwdError("Passwords do not match.")
+      return
+    }
     setPwdToast(true)
-    setCurrentPwd(""); setNewPwd(""); setConfirmPwd("")
-    setTimeout(() => setPwdToast(false), 3000)
+    setCurrentPwd("")
+    setNewPwd("")
+    setConfirmPwd("")
+    setTimeout(() => setPwdToast(false), 4000)
   }
 
   return (
     <div>
-      <h2 className="font-bold text-xl text-brand-charcoal mb-6">Account Settings</h2>
+      <h2 className="mb-6 text-xl font-bold text-brand-charcoal">
+        Account Settings
+      </h2>
 
       {/* Section A — Personal Information */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 className="font-semibold text-brand-charcoal mb-4">Personal Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
+        <h3 className="mb-4 font-semibold text-brand-charcoal">
+          Personal Information
+        </h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {[
             { label: "First Name", key: "firstName", type: "text" },
             { label: "Last Name", key: "lastName", type: "text" },
@@ -148,21 +172,29 @@ export default function AccountSettings() {
             { label: "Date of Birth", key: "dob", type: "date" },
           ].map(({ label, key, type }) => (
             <div key={key}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                {label}
+              </label>
               <input
                 type={type}
                 value={profile[key as keyof typeof profile]}
-                onChange={(e) => setProfile({ ...profile, [key]: e.target.value })}
-                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
+                onChange={(e) =>
+                  setProfile({ ...profile, [key]: e.target.value })
+                }
+                className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-charcoal focus:ring-2 focus:ring-brand-charcoal/20 focus:outline-none"
               />
             </div>
           ))}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700">
+              Gender
+            </label>
             <select
               value={profile.gender}
-              onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-charcoal/20 focus:border-brand-charcoal"
+              onChange={(e) =>
+                setProfile({ ...profile, gender: e.target.value })
+              }
+              className="w-full rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-charcoal focus:ring-2 focus:ring-brand-charcoal/20 focus:outline-none"
             >
               {["Male", "Female", "Prefer not to say"].map((g) => (
                 <option key={g}>{g}</option>
@@ -171,51 +203,82 @@ export default function AccountSettings() {
           </div>
         </div>
         {profileToast && (
-          <div className="mt-4 flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+          <div className="mt-4 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700">
             ✓ Profile updated!
           </div>
         )}
         <button
           onClick={handleProfileSave}
-          className="mt-4 w-full bg-brand-charcoal text-white py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d1733] transition-colors"
+          className="mt-4 w-full rounded-lg bg-brand-charcoal py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#0d1733]"
         >
           Save Changes
         </button>
       </div>
 
       {/* Section B — Change Password */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 className="font-semibold text-brand-charcoal mb-4">Change Password</h3>
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
+        <h3 className="mb-4 font-semibold text-brand-charcoal">
+          Change Password
+        </h3>
         <div className="space-y-4">
-          <PasswordField label="Current Password" value={currentPwd} onChange={setCurrentPwd} />
-          <PasswordField label="New Password" value={newPwd} onChange={setNewPwd} showStrength />
-          <PasswordField label="Confirm New Password" value={confirmPwd} onChange={setConfirmPwd} />
+          <PasswordField
+            label="Current Password"
+            value={currentPwd}
+            onChange={setCurrentPwd}
+          />
+          <PasswordField
+            label="New Password"
+            value={newPwd}
+            onChange={setNewPwd}
+            showStrength
+          />
+          <PasswordField
+            label="Confirm New Password"
+            value={confirmPwd}
+            onChange={setConfirmPwd}
+          />
         </div>
-        {pwdError && (
-          <p className="mt-3 text-sm text-red-500">{pwdError}</p>
-        )}
+        {pwdError && <p className="mt-3 text-sm text-red-500">{pwdError}</p>}
         {pwdToast && (
-          <div className="mt-3 flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-lg px-4 py-2.5 text-sm">
+          <div className="mt-3 flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-2.5 text-sm text-green-700">
             ✓ Password updated!
           </div>
         )}
         <button
           onClick={handlePasswordUpdate}
-          className="mt-4 bg-brand-charcoal text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d1733] transition-colors"
+          className="mt-4 rounded-lg bg-brand-charcoal px-6 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#0d1733]"
         >
           Update Password
         </button>
       </div>
 
       {/* Section C — Notification Preferences */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 className="font-semibold text-brand-charcoal mb-4">Notifications</h3>
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6">
+        <h3 className="mb-4 font-semibold text-brand-charcoal">
+          Notifications
+        </h3>
         <div className="space-y-4">
           {[
-            { key: "email", label: "📧 Email notifications", description: "Order updates" },
-            { key: "sms", label: "📱 SMS notifications", description: "Delivery alerts" },
-            { key: "whatsapp", label: "💬 WhatsApp notifications", description: "Order status" },
-            { key: "promo", label: "🎁 Promotional emails", description: "Deals and offers" },
+            {
+              key: "email",
+              label: "📧 Email notifications",
+              description: "Order updates",
+            },
+            {
+              key: "sms",
+              label: "📱 SMS notifications",
+              description: "Delivery alerts",
+            },
+            {
+              key: "whatsapp",
+              label: "💬 WhatsApp notifications",
+              description: "Order status",
+            },
+            {
+              key: "promo",
+              label: "🎁 Promotional emails",
+              description: "Deals and offers",
+            },
           ].map(({ key, label, description }) => (
             <div key={key} className="flex items-center justify-between">
               <div>
@@ -224,7 +287,9 @@ export default function AccountSettings() {
               </div>
               <Toggle
                 checked={notifications[key as keyof typeof notifications]}
-                onChange={(v) => setNotifications({ ...notifications, [key]: v })}
+                onChange={(v) =>
+                  setNotifications({ ...notifications, [key]: v })
+                }
               />
             </div>
           ))}
@@ -232,37 +297,41 @@ export default function AccountSettings() {
       </div>
 
       {/* Section D — Danger Zone */}
-      <div className="bg-white rounded-xl border border-red-200 p-6">
-        <h3 className="font-semibold text-red-600 mb-4">Danger Zone</h3>
+      <div className="rounded-xl border border-red-200 bg-white p-6">
+        <h3 className="mb-4 font-semibold text-red-600">Danger Zone</h3>
         {!showDeleteConfirm ? (
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="border border-red-500 text-red-500 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-red-50 transition-colors"
+            className="rounded-lg border border-red-500 px-5 py-2.5 text-sm font-medium text-red-500 transition-colors hover:bg-red-50"
           >
             Delete Account
           </button>
         ) : (
           <div>
-            <p className="text-sm text-gray-700 mb-3">
-              This action cannot be undone. Type <strong>DELETE</strong> to confirm:
+            <p className="mb-3 text-sm text-gray-700">
+              This action cannot be undone. Type <strong>DELETE</strong> to
+              confirm:
             </p>
             <input
               type="text"
               value={deleteInput}
               onChange={(e) => setDeleteInput(e.target.value)}
               placeholder="Type DELETE"
-              className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm w-full max-w-xs focus:outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400"
+              className="w-full max-w-xs rounded-lg border border-gray-200 px-3 py-2.5 text-sm focus:border-red-400 focus:ring-2 focus:ring-red-300 focus:outline-none"
             />
-            <div className="flex gap-3 mt-3">
+            <div className="mt-3 flex gap-3">
               <button
                 disabled={deleteInput !== "DELETE"}
-                className="bg-red-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-lg bg-red-500 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Confirm Delete
               </button>
               <button
-                onClick={() => { setShowDeleteConfirm(false); setDeleteInput("") }}
-                className="bg-gray-100 text-gray-600 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setDeleteInput("")
+                }}
+                className="rounded-lg bg-gray-100 px-5 py-2.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-200"
               >
                 Cancel
               </button>
